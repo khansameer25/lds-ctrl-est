@@ -24,16 +24,19 @@ jobs:
     - name: Set up vcpkg
       run: |
         if [ "${{ runner.os }}" == "Windows" ]; then
-          if [Test-Path -Path "vcpkg"]; then
+          if (Test-Path -Path "vcpkg"); then
             Remove-Item -Recurse -Force "vcpkg"
           fi
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
         else
           rm -rf vcpkg
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
         fi
-        git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg
-        ./bootstrap-vcpkg.sh  # Use .\bootstrap-vcpkg.bat on Windows
-
+    
     - name: Set up dependencies
       run: |
         if [ "${{ runner.os }}" == "macOS" ]; then
