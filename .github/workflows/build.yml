@@ -21,6 +21,12 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Set up vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg
+        ./bootstrap-vcpkg.sh  # Use .\bootstrap-vcpkg.bat on Windows
+
     - name: Set up dependencies
       run: |
         if [ "${{ runner.os }}" == "Linux" ] || [ "${{ runner.os }}" == "macOS" ]; then
