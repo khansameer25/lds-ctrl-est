@@ -30,10 +30,11 @@ jobs:
 
     - name: Set up dependencies
       run: |
-        if [ "${{ runner.os }}" == "Linux" ] || [ "${{ runner.os }}" == "macOS" ]; then
+        if [ "${{ runner.os }}" == "macOS" ]; then
+          brew install cmake gfortran curl zip unzip tar build-essential
+        elif [ "${{ runner.os }}" == "Linux" ]; then
           sudo apt-get install -y cmake gfortran pkg-config
-        fi
-        if [ "${{ runner.os }}" == "Windows" ]; then
+        elif [ "${{ runner.os }}" == "Windows" ]; then
           choco install cmake git
         fi
 
