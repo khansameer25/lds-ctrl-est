@@ -23,19 +23,19 @@ jobs:
 
     - name: Set up vcpkg
       run: |
-        if [ "${{ runner.os }}" == "Windows" ]; then
+        if ($env:OS -eq "Windows") {
           if (Test-Path -Path "vcpkg") {
             Remove-Item -Recurse -Force "vcpkg"
           }
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           .\bootstrap-vcpkg.bat
-        else
+        } else {
           rm -rf vcpkg
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
-        fi
+        }
     
     - name: Set up dependencies
       run: |
