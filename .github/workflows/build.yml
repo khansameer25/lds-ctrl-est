@@ -22,6 +22,7 @@ jobs:
         submodules: recursive
 
     - name: Set up vcpkg
+      shell: pwsh
       run: |
         if ($env:OS -eq "Windows") {
           if (Test-Path -Path "vcpkg") {
