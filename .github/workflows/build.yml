@@ -24,9 +24,9 @@ jobs:
     - name: Set up vcpkg
       run: |
         if [ "${{ runner.os }}" == "Windows" ]; then
-          if (Test-Path -Path "vcpkg") {
+          if [Test-Path -Path "vcpkg"]; then
             Remove-Item -Recurse -Force "vcpkg"
-          }
+          fi
         else
           rm -rf vcpkg
         fi
