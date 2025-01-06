@@ -1,0 +1,41 @@
+name: Build and Test ldsCtrlEst
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Set up dependencies
+      run: |
+        if [ "${{ runner.os }}" == "Linux" ] || [ "${{ runner.os }}" == "macOS" ]; then
+          sudo apt-get install -y cmake gfortran pkg-config
+        fi
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          choco install cmake git
+        fi
+
+    - name: Configure and build
+      run: |
+        mkdir build && cd build
+        cmake ..
+        cmake --build .
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest
