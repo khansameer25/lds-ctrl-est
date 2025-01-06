@@ -23,6 +23,7 @@ jobs:
 
     - name: Set up vcpkg
       run: |
+        rm -rf vcpkg
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
         ./bootstrap-vcpkg.sh  # Use .\bootstrap-vcpkg.bat on Windows
