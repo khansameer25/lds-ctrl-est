@@ -43,7 +43,7 @@ jobs:
     - name: Set up dependencies
       run: |
         if [ "${{ runner.os }}" == "macOS" ]; then
-          brew install cmake gfortran curl zip unzip gnu-tar build-essential
+          brew install cmake gfortran curl zip unzip gnu-tar
         elif [ "${{ runner.os }}" == "Linux" ]; then
           sudo apt-get install -y cmake gfortran pkg-config
         elif [ "${{ runner.os }}" == "Windows" ]; then
