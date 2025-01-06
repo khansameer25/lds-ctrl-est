@@ -21,22 +21,24 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Set up vcpkg
+    - name: Set up vcpkg for Windows
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        if ($env:OS -eq "Windows") {
-          if (Test-Path -Path "vcpkg") {
-            Remove-Item -Recurse -Force "vcpkg"
-          }
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          .\bootstrap-vcpkg.bat
-        } else {
-          rm -rf vcpkg
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
+        if (Test-Path -Path "vcpkg") {
+          Remove-Item -Recurse -Force "vcpkg"
         }
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg
+        .\bootstrap-vcpkg.bat
+    
+    - name: Set up vcpkg for macOS/Linux
+      if: runner.os != 'Windows'
+      run: |
+        rm -rf vcpkg
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg
+        ./bootstrap-vcpkg.sh
     
     - name: Set up dependencies
       run: |
