@@ -23,7 +23,13 @@ jobs:
 
     - name: Set up vcpkg
       run: |
-        rm -rf vcpkg
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          if (Test-Path -Path "vcpkg") {
+            Remove-Item -Recurse -Force "vcpkg"
+          }
+        else
+          rm -rf vcpkg
+        fi
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
         ./bootstrap-vcpkg.sh  # Use .\bootstrap-vcpkg.bat on Windows
