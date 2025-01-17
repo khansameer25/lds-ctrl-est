@@ -21,6 +21,14 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Cache vcpkg directory
+      uses: actions/cache@v3
+      with:
+        path: vcpkg
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+        restore-keys: |
+          vcpkg-${{ matrix.os }}-
+
     - name: Set up vcpkg for Windows
       if: runner.os == 'Windows'
       shell: pwsh
@@ -39,7 +47,7 @@ jobs:
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
         ./bootstrap-vcpkg.sh
-    
+
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
       run: |
@@ -54,10 +62,18 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         choco install cmake git
-        
+
+    - name: Cache build directory
+      uses: actions/cache@v3
+      with:
+        path: build
+        key: build-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt') }}
+        restore-keys: |
+          build-${{ matrix.os }}-
+
     - name: Configure and build
       run: |
-        mkdir build && cd build
+        mkdir -p build && cd build
         cmake ..
         cmake --build .
 
