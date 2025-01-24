@@ -71,9 +71,22 @@ jobs:
         restore-keys: |
           build-${{ matrix.os }}-
 
-    - name: Configure and build
+    - name: Configure and build for macOS/Linux
+      if: runner.os != 'Windows'
       run: |
         mkdir -p build && cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
+        cmake --build . --config Release
+
+    - name: Configure and build for Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        if (Test-Path -Path "build") {
+          Remove-Item -Recurse -Force "build"
+        }
+        mkdir build
+        cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         cmake --build . --config Release
 
