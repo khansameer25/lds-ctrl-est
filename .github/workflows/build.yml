@@ -74,10 +74,20 @@ jobs:
     - name: Configure and build
       run: |
         mkdir -p build && cd build
-        cmake ..
-        cmake --build .
+        cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
+        cmake --build . --config Release
+
+    - name: Install (Windows only)
+      if: runner.os == 'Windows'
+      run: |
+        cd build
+        cmake --install .
+
+    - name: Add install directory to PATH (Windows only)
+      if: runner.os == 'Windows'
+      run: echo "${{github.workspace}}/install/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Run tests
       run: |
         cd build
-        ctest
+        ctest -C Release
