@@ -22,10 +22,12 @@ jobs:
         submodules: recursive
 
     - name: Set up vcpkg
-      uses: actions/setup-vcpkg@v1
+      uses: lukka/run-vcpkg@v11
       with:
-        vcpkg-version: latest
-        vcpkg-cache: true
+        vcpkgDirectory: '${{ runner.workspace }}/vcpkg'
+        vcpkgGitCommitId: 'latest'
+        vcpkgCache: true
+
     
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
