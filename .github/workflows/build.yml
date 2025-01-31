@@ -21,14 +21,43 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Set up vcpkg
-      uses: lukka/run-vcpkg@v11
+    - name: Cache vcpkg binaries
+      uses: actions/cache@v3
       with:
-        vcpkgDirectory: '${{ runner.workspace }}/vcpkg'
-        vcpkgGitCommitId: 'latest'
-        vcpkgCache: true
+        path: ~/.cache/vcpkg
+        key: vcpkg-binary-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+        restore-keys: |
+          vcpkg-binary-${{ matrix.os }}-
 
-    
+    - name: Cache vcpkg directory
+      uses: actions/cache@v3
+      with:
+        path: vcpkg
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+        restore-keys: |
+          vcpkg-${{ matrix.os }}-
+
+    - name: Set up vcpkg for Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        if (Test-Path -Path "vcpkg") {
+          Remove-Item -Recurse -Force "vcpkg"
+        }
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg
+        .\bootstrap-vcpkg.bat
+        .\vcpkg integrate install
+
+    - name: Set up vcpkg for macOS/Linux
+      if: runner.os != 'Windows'
+      run: |
+        rm -rf vcpkg
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg
+        ./bootstrap-vcpkg.sh
+        ./vcpkg integrate install
+
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
       run: |
@@ -38,12 +67,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake gfortran pkg-config build-essential
         fi
-    
+
     - name: Set up dependencies for Windows
       if: runner.os == 'Windows'
       run: |
         choco install cmake git
-    
+
     - name: Cache build directory
       uses: actions/cache@v3
       with:
@@ -51,14 +80,14 @@ jobs:
         key: build-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt') }}
         restore-keys: |
           build-${{ matrix.os }}-
-    
+
     - name: Configure and build for macOS/Linux
       if: runner.os != 'Windows'
       run: |
         mkdir -p build && cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
-        cmake --build . --config Release
-    
+        cmake --build . --config Release --parallel
+
     - name: Configure and build for Windows
       if: runner.os == 'Windows'
       shell: pwsh
@@ -69,14 +98,14 @@ jobs:
         mkdir build
         cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
-        cmake --build . --config Release
-    
+        cmake --build . --config Release --parallel
+
     - name: Install (Windows only)
       if: runner.os == 'Windows'
       run: |
         cd build
         cmake --install .
-    
+
     - name: Add install directory to PATH (Windows only)
       if: runner.os == 'Windows'
       run: echo "${{github.workspace}}/install/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
