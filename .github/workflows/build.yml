@@ -24,10 +24,11 @@ jobs:
     - name: Cache vcpkg binaries
       uses: actions/cache@v3
       with:
-        path: ~/.cache/vcpkg
+        path: ${{ runner.os == 'Windows' && 'C:\\Users\\runneradmin\\AppData\\Local\\vcpkg\\' || '~/.cache/vcpkg' }}
         key: vcpkg-binary-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
         restore-keys: |
           vcpkg-binary-${{ matrix.os }}-
+
 
     - name: Cache vcpkg directory
       uses: actions/cache@v3
