@@ -34,11 +34,10 @@ jobs:
       run: |
         if [ ! -d "vcpkg" ]; then
           git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
-          cd ..
         fi
-        ls -la vcpkg 
+        cd vcpkg
+        ./bootstrap-vcpkg.sh
+        cd ..
         mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
         ./vcpkg/vcpkg install --clean-after-build
       shell: bash
