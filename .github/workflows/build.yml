@@ -21,86 +21,62 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Cache vcpkg directory
+    - name: Cache vcpkg
       uses: actions/cache@v3
       with:
         path: vcpkg
         key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
-        restore-keys: |
-          vcpkg-${{ matrix.os }}-
+        restore-keys: vcpkg-${{ matrix.os }}-
+
+    - name: Set up vcpkg
+      run: |
+        if [ ! -d "vcpkg" ]; then
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+        fi
+      if: runner.os != 'Windows'
 
     - name: Set up vcpkg for Windows
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        if (Test-Path -Path "vcpkg") {
-          Remove-Item -Recurse -Force "vcpkg"
+        if (!(Test-Path -Path "vcpkg")) {
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
         }
-        git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg
-        .\bootstrap-vcpkg.bat
-    
-    - name: Set up vcpkg for macOS/Linux
-      if: runner.os != 'Windows'
-      run: |
-        rm -rf vcpkg
-        git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg
-        ./bootstrap-vcpkg.sh
 
-    - name: Set up dependencies for macOS and Linux
+    - name: Install dependencies (Linux/macOS)
       if: runner.os != 'Windows'
       run: |
         if [ "${{ runner.os }}" == "macOS" ]; then
-          brew install cmake gfortran curl zip unzip gnu-tar
+          brew install cmake ninja gfortran
         elif [ "${{ runner.os }}" == "Linux" ]; then
           sudo apt-get update
-          sudo apt-get install -y cmake gfortran pkg-config build-essential
+          sudo apt-get install -y cmake ninja-build gfortran
         fi
 
-    - name: Set up dependencies for Windows
+    - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
-      run: |
-        choco install cmake git
+      run: choco install cmake ninja
 
     - name: Cache build directory
       uses: actions/cache@v3
       with:
         path: build
         key: build-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt') }}
-        restore-keys: |
-          build-${{ matrix.os }}-
+        restore-keys: build-${{ matrix.os }}-
 
-    - name: Configure and build for macOS/Linux
-      if: runner.os != 'Windows'
+    - name: Configure and build (All Platforms)
       run: |
-        mkdir -p build && cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
-        cmake --build . --config Release
+        cmake -S . -B build -G Ninja -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
+        cmake --build build --config Release --parallel
+      shell: bash
 
-    - name: Configure and build for Windows
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        if (Test-Path -Path "build") {
-          Remove-Item -Recurse -Force "build"
-        }
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
-        cmake --build . --config Release
-
-    - name: Install (Windows only)
-      if: runner.os == 'Windows'
-      run: |
-        cd build
-        cmake --install .
-
-    - name: Add install directory to PATH (Windows only)
-      if: runner.os == 'Windows'
-      run: echo "${{github.workspace}}/install/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Install
+      run: cmake --install build
+      shell: bash
 
     - name: Run tests
-      run: |
-        cd build
-        ctest -C Release
+      run: ctest --test-dir build -C Release
