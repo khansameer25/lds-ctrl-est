@@ -35,7 +35,7 @@ jobs:
       if: runner.os != 'Windows'
       run: |
         if [ "${{ runner.os }}" == "macOS" ]; then
-          brew install cmake gfortran curl zip unzip gnu-tar
+          brew install cmake curl zip unzip gnu-tar
         elif [ "${{ runner.os }}" == "Linux" ]; then
           sudo apt-get update
           sudo apt-get install -y cmake gfortran pkg-config build-essential
