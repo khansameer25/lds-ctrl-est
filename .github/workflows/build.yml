@@ -36,9 +36,9 @@ jobs:
       uses: lukka/run-cmake@v10
       with:
         cmakeListsTxtPath: CMakeLists.txt
-        configurePreset: 'default'
-        buildPreset: 'default'
-        testPreset: 'default'
+        configurePreset: false
+        buildPreset: false
+        testPreset: false
 
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
