@@ -30,7 +30,6 @@ jobs:
       with:
         vcpkgJsonGlob: 'vcpkg.json'
         runVcpkgInstall: true
-        appendedCacheKey: ${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
       
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
