@@ -35,14 +35,10 @@ jobs:
     - name: Configure CMake
       uses: lukka/run-cmake@v10
       with:
-        cmakeListsTxtPath: ./CMakeLists.txt
-        configurePreset: ''
-        buildPreset: ''
-        testPreset: ''
-        packagePreset: ''
-        workflowPreset: ''
-        configurePresetAdditionalArgs: '-DCMAKE_BUILD_TYPE=Release'
-        buildPresetAdditionalArgs: ''
+        cmakeListsTxtPath: CMakeLists.txt
+        configurePreset: 'default'
+        buildPreset: 'default'
+        testPreset: 'default'
 
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
