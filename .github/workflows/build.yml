@@ -32,14 +32,6 @@ jobs:
         runVcpkgInstall: true
         appendedCacheKey: ${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
       
-    - name: Configure CMake
-      uses: lukka/run-cmake@v10
-      with:
-        cmakeListsTxtPath: CMakeLists.txt
-        configurePreset: 'default'
-        buildPreset: 'default'
-        testPreset: 'default'
-
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
       run: |
@@ -49,12 +41,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake gfortran pkg-config build-essential
         fi
-
     - name: Set up dependencies for Windows
       if: runner.os == 'Windows'
       run: |
         choco install cmake git
-
     - name: Cache build directory
       uses: actions/cache@v3
       with:
@@ -62,14 +52,12 @@ jobs:
         key: build-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt') }}
         restore-keys: |
           build-${{ matrix.os }}-
-
     - name: Configure and build for macOS/Linux
       if: runner.os != 'Windows'
       run: |
         mkdir -p build && cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         cmake --build . --config Release --parallel
-
     - name: Configure and build for Windows
       if: runner.os == 'Windows'
       shell: pwsh
@@ -81,13 +69,11 @@ jobs:
         cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         cmake --build . --config Release --parallel
-
     - name: Install (Windows only)
       if: runner.os == 'Windows'
       run: |
         cd build
         cmake --install .
-
     - name: Add install directory to PATH (Windows only)
       if: runner.os == 'Windows'
       run: echo "${{github.workspace}}/install/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
