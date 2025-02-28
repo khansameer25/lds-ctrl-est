@@ -2,34 +2,41 @@
   "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 21,
+    "minor": 18,
     "patch": 0
   },
-  "presets": {
-    "configure": [
-      {
-        "name": "default",
-        "generator": "Ninja",
-        "binaryDir": "${sourceDir}/build",
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Release"
-        }
+  "configurePresets": [
+    {
+      "name": "linux-release",
+      "hidden": false,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
       }
-    ],
-    "build": [
-      {
-        "name": "default",
-        "binaryDir": "${sourceDir}/build",
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Release"
-        }
+    },
+    {
+      "name": "windows-release",
+      "hidden": false,
+      "generator": "Visual Studio 16 2019",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
       }
-    ],
-    "test": [
-      {
-        "name": "default",
-        "binaryDir": "${sourceDir}/build"
-      }
-    ]
-  }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release",
+      "hidden": false
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-release",
+      "hidden": false
+    }
+  ]
 }
