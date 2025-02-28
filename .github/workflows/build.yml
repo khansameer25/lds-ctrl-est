@@ -3,7 +3,7 @@ name: Build and Test ldsCtrlEst
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
   workflow_dispatch:
 
@@ -21,43 +21,20 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Cache vcpkg binaries
-      uses: actions/cache@v3
+    - name: Set up vcpkg
+      uses: lukka/run-vcpkg@v11
       with:
-        path: ${{ runner.os == 'Windows' && 'C:\\Users\\runneradmin\\AppData\\Local\\vcpkg\\' || '~/.cache/vcpkg' }}
-        key: vcpkg-binary-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
-        restore-keys: |
-          vcpkg-binary-${{ matrix.os }}-
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgJsonGlob: 'vcpkg.json'
+        runVcpkgInstall: true
 
-
-    - name: Cache vcpkg directory
-      uses: actions/cache@v3
+    - name: Configure CMake
+      uses: lukka/run-cmake@v10
       with:
-        path: vcpkg
-        key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
-        restore-keys: |
-          vcpkg-${{ matrix.os }}-
-
-    - name: Set up vcpkg for Windows
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        if (Test-Path -Path "vcpkg") {
-          Remove-Item -Recurse -Force "vcpkg"
-        }
-        git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg
-        .\bootstrap-vcpkg.bat
-        .\vcpkg integrate install
-
-    - name: Set up vcpkg for macOS/Linux
-      if: runner.os != 'Windows'
-      run: |
-        rm -rf vcpkg
-        git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg
-        ./bootstrap-vcpkg.sh
-        ./vcpkg integrate install
+        cmakeListsOrSettingsJson: '${{ github.workspace }}/CMakeLists.txt'
+        configurePreset: 'default'
+        buildPreset: 'default'
+        testPreset: 'default'
 
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
