@@ -9,7 +9,7 @@
     {
       "name": "linux-release",
       "hidden": false,
-      "generator": "Ninja",
+      "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
