@@ -54,7 +54,7 @@ jobs:
       if: runner.os != 'Windows'
       uses: lukka/run-cmake@v10
       with:
-        cmakeListsTxtPath: ${{ github.workspace }}
+        cmakeListsTxtPath: CMakeLists.txt
         configurePreset: 'linux-release'
         buildPreset: 'linux-release'
 
@@ -63,7 +63,7 @@ jobs:
       if: runner.os == 'Windows'
       uses: lukka/run-cmake@v10
       with:
-        cmakeListsTxtPath: ${{ github.workspace }}
+        cmakeListsTxtPath: CMakeLists.txt
         configurePreset: 'windows-release'
         buildPreset: 'windows-release'
         
