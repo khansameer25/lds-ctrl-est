@@ -65,12 +65,18 @@ jobs:
         configurePreset: 'windows-release'
         buildPreset: 'windows-release'
 
-    # - name: Install and Update PATH (Windows only)
-    #   if: runner.os == 'Windows'
-    #   run: |
-    #     cd build
-    #     cmake --install . --config Release
-    #     echo "${{github.workspace}}\install\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Debug Build Output (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "Checking build output directory..."
+        dir build\Release
+
+    - name: Install Build Artifacts (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake --install build --prefix install
+        echo "Installed files:"
+        dir install
 
     - name: Run tests
       run: |
