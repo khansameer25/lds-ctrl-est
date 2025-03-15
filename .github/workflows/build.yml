@@ -70,21 +70,6 @@ jobs:
         cmakeListsTxtPath: CMakeLists.txt
         configurePreset: 'windows-release'
         buildPreset: 'windows-release'
-        buildWithCMake: true
-        verbose: true
-
-    # Debug build output directory
-    - name: Debug Build Directory (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        echo "Checking build output directory..."
-        dir build
-
-    # Build manually if necessary (Windows)
-    - name: Build Manually (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        cmake --build build --config Release --verbose
 
     # Check for DLL (Windows)
     - name: Check for ldsCtrlEst.dll
