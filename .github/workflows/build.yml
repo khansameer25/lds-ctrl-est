@@ -21,7 +21,6 @@ jobs:
       with:
         submodules: recursive
 
-    # Install dependencies for macOS/Linux
     - name: Set up dependencies for macOS and Linux
       if: runner.os != 'Windows'
       run: |
@@ -29,22 +28,20 @@ jobs:
           brew install cmake ninja
         elif [ "${{ runner.os }}" == "Linux" ]; then
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential ninja-build
+          sudo apt-get install -y cmake build-essential
         fi
 
-    # Install dependencies for Windows
     - name: Set up dependencies for Windows
       if: runner.os == 'Windows'
-      run: choco install cmake ninja
-
-    # Run vcpkg for dependency management
+      run: |
+        choco install cmake
+  
     - name: Run vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgJsonGlob: 'vcpkg.json'
         runVcpkgInstall: true
-
-    # Cache build directory for faster runs
+        
     - name: Cache build directory
       uses: actions/cache@v3
       with:
@@ -52,8 +49,7 @@ jobs:
         key: build-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt') }}
         restore-keys: |
           build-${{ matrix.os }}-
-
-    # Configure and build for macOS/Linux
+          
     - name: Configure and build for macOS/Linux
       if: runner.os != 'Windows'
       uses: lukka/run-cmake@v10
@@ -62,7 +58,6 @@ jobs:
         configurePreset: 'linux-release'
         buildPreset: 'linux-release'
 
-    # Configure and build for Windows
     - name: Configure and build for Windows
       if: runner.os == 'Windows'
       uses: lukka/run-cmake@v10
@@ -70,24 +65,15 @@ jobs:
         cmakeListsTxtPath: CMakeLists.txt
         configurePreset: 'windows-release'
         buildPreset: 'windows-release'
-
-    # Check for DLL (Windows)
-    - name: Check for ldsCtrlEst.dll
+        
+    - name: Install and Update PATH (Windows only)
       if: runner.os == 'Windows'
       run: |
-        echo "Looking for ldsCtrlEst.dll..."
-        Get-ChildItem -Path build -Recurse -Filter ldsCtrlEst.dll
+        cd build
+        cmake --install .
+        echo "${{github.workspace}}/install/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-    # Install Build Artifacts (Windows)
-    - name: Install Build Artifacts (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        cmake --install build --prefix install
-        echo "Installed files:"
-        dir install
-
-    # Run tests
     - name: Run tests
       run: |
         cd build
-        ctest -C Release --output-on-failure
+        ctest -C Release
