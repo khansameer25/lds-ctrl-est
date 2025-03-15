@@ -65,7 +65,8 @@ jobs:
         cmakeListsTxtPath: CMakeLists.txt
         configurePreset: 'windows-release'
         buildPreset: 'windows-release'
-        cmakeExtraArgs: '-DCMAKE_BUILD_TYPE=Release'
+        configurePresetAdditionalArgs: '-DCMAKE_BUILD_TYPE=Release'
+        buildPresetAdditionalArgs: '-DCMAKE_BUILD_TYPE=Release'
         
     - name: Install and Update PATH (Windows only)
       if: runner.os == 'Windows'
