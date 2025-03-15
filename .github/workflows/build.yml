@@ -65,16 +65,12 @@ jobs:
         configurePreset: 'windows-release'
         buildPreset: 'windows-release'
 
-    - name: Ensure build directory exists (Windows)
-      if: runner.os == 'Windows'
-      run: mkdir -Force build
-
     - name: Install and Update PATH (Windows only)
       if: runner.os == 'Windows'
       run: |
         cd build
-        cmake --install . --prefix "${{ github.workspace }}/install"
-        echo "${{ github.workspace }}\install\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        cmake --install . --config Release
+        echo "${{github.workspace}}\install\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Run tests
       run: |
