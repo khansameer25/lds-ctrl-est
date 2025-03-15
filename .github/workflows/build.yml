@@ -67,6 +67,8 @@ jobs:
         buildPreset: 'windows-release'
         configurePresetAdditionalArgs: '-DCMAKE_BUILD_TYPE=Release'
         buildPresetAdditionalArgs: '-DCMAKE_BUILD_TYPE=Release'
+        useShell: true
+        logCollectionRegExps: '\"(.+CMakeOutput\.log)\";\s*\"(.+CMakeError\.log)\";\s*(.+out\.log)\s*;\s+(.+err\.log)\s*;\s*(.+vcpkg.+\.log)\s*'
         
     - name: Install and Update PATH (Windows only)
       if: runner.os == 'Windows'
