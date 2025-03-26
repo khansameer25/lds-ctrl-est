@@ -78,3 +78,36 @@ jobs:
       run: |
         cd build
         ctest -C Release
+  
+  build_release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python (for cibuildwheel)
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel
+
+      - name: Build wheels for multiple platforms
+        env:
+          CIBW_TEST_COMMAND: "pytest"
+        run: |
+          cibuildwheel --output-dir wheelhouse
+
+      - name: Run tests separately (optional)
+        run: |
+          pip install pytest
+          pytest
+
+      # - name: Publish wheels to PyPI
+      #   uses: pypa/gh-action-pypi-publish@v1.4.2
+      #   with:
+      #     user: __token__
+      #     password: ${{ secrets.PYPI_API_TOKEN }}
+
