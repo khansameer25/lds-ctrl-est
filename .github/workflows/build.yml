@@ -127,3 +127,4 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
           packages_dir: build/python/dist
+          repository_url: https://test.pypi.org/legacy/
