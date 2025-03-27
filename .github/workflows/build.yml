@@ -115,6 +115,15 @@ jobs:
           pip install .
           pytest
 
+      - name: Test wheel installation
+        run: |
+          python -m venv test_env
+          source test_env/bin/activate
+          cd build/python
+          pip install dist/*.whl
+          pip install numpy
+          python -c "import ldsctrlest; print(ldsctrlest.__version__)"
+
       - name: Build wheel and sdist
         run: |
           cd build/python
@@ -127,3 +136,22 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           packages_dir: build/python/dist
           repository_url: https://test.pypi.org/legacy/
+
+      - name: Test PyPI Installation
+        run: |
+          python -m venv pypi_test_env
+          source pypi_test_env/bin/activate
+          
+          pip install -v --no-cache-dir ldsctrlest
+          pip install numpy
+          
+          echo "Installed packages:"
+          pip list
+          
+          echo "Package contents:"
+          python -c "import os, ldsctrlest; print('\n'.join(os.path.join(root,f) for root,_,files in os.walk(os.path.dirname(ldsctrlest.__file__)) for f in files))"
+          
+          python -c "import ldsctrlest; print('SUCCESS:', ldsctrlest.__version__)"
+        env:
+          PIP_FIND_LINKS: "https://pypi.org/simple"
+          PIP_VERBOSE: 1
