@@ -142,7 +142,7 @@ jobs:
           python -m venv pypi_test_env
           source pypi_test_env/bin/activate
           
-          pip install -v --no-cache-dir ldsctrlest
+          pip install -v -i https://test.pypi.org/simple/ ldsctrlest
           pip install numpy
           
           echo "Installed packages:"
