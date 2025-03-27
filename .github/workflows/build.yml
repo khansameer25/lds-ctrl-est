@@ -79,35 +79,50 @@ jobs:
         cd build
         ctest -C Release
   
-  build_release:
-    needs: build
+  build_python_package:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout repository and submodules
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-      - name: Set up Python (for cibuildwheel)
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
-      - name: Install cibuildwheel
-        run: pip install cibuildwheel
-
-      - name: Build wheels for multiple platforms
-        env:
-          CIBW_TEST_COMMAND: "pytest"
+      - name: Upgrade pip and install dependencies
         run: |
-          cibuildwheel --output-dir wheelhouse
+          python -m pip install --upgrade pip
+          pip install numpy pytest matplotlib cmake build
 
-      - name: Run tests separately (optional)
+      - name: Configure and build Python modules with CMake
         run: |
-          pip install pytest
+          mkdir build && cd build
+          cmake -DLDSCTRLEST_BUILD_PYTHON=ON \
+                -DLDSCTRLEST_BUILD_STATIC=ON \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DPYTHON_EXECUTABLE=$(which python) \
+                -DPYTHON_INCLUDE_DIR=$(python -c 'from sysconfig import get_paths as gp; print(gp()["include"])') \
+                -DPYTHON_LIBRARIES=$(python -c 'from sysconfig import get_paths as gp; print(gp()["stdlib"])') \
+                -G "Unix Makefiles" ..
+          cmake --build . --target python_modules
+
+      - name: Install Python package and run tests
+        run: |
+          cd build/python
+          pip install .
           pytest
 
-      # - name: Publish wheels to PyPI
-      #   uses: pypa/gh-action-pypi-publish@v1.4.2
-      #   with:
-      #     user: __token__
-      #     password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Build wheel and sdist
+        run: |
+          # Building wheel and sdist; the build module creates a `dist` directory.
+          python -m build --wheel
+          python -m build --sdist
 
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist
