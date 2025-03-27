@@ -117,7 +117,7 @@ jobs:
 
       - name: Build wheel and sdist
         run: |
-          # Building wheel and sdist; the build module creates a `dist` directory.
+          cd build/python
           python -m build --wheel
           python -m build --sdist
 
@@ -125,4 +125,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
-          path: dist
+          path: build/python/dist
