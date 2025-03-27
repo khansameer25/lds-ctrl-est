@@ -121,8 +121,8 @@ jobs:
           python -m build --wheel
           python -m build --sdist
 
-      - name: Upload built artifacts
-        uses: actions/upload-artifact@v4
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.4.2
         with:
-          name: python-package-distributions
-          path: build/python/dist
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
