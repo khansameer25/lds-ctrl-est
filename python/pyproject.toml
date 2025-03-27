@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build", "setuptools", "wheel", "cmake"]
+build-backend = "skbuild"
 
 [project]
 name = "ldsctrlest"
-version = "0.0.3"
+version = "0.9.0"
 description = "Python bindings for ldsCtrlEst"
 authors = [{ name = "Kyle Johnsen" }, { name = "Michael Bolus" }]
 license = { text = "Apache-2.0" }
@@ -15,7 +15,7 @@ packages = ["ldsctrlest"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-ldsctrlest = ["*.pyd", "*.lib", "*.pdb", ".so", ".dylib", ".dll"]
+ldsctrlest = ["*.pyd", "*.lib", "*.pdb", "*.so", "*.dylib", "*.dll"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
