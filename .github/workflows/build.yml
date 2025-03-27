@@ -127,6 +127,7 @@ jobs:
           source test_env/bin/activate
           cd build/python
           pip install dist/*.whl
+          pip install numpy
           python -c "import ldsctrlest; print(ldsctrlest.__version__)"
 
       - name: Publish package to PyPI
