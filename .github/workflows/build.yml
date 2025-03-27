@@ -115,6 +115,11 @@ jobs:
           pip install .
           pytest
 
+      - name: Build wheel and sdist
+        run: |
+          cd build/python
+          python -m build --wheel
+
       - name: Test wheel installation
         run: |
           python -m venv test_env
@@ -123,11 +128,6 @@ jobs:
           pip install dist/*.whl
           pip install numpy
           python -c "import ldsctrlest; print(ldsctrlest.__version__)"
-
-      - name: Build wheel and sdist
-        run: |
-          cd build/python
-          python -m build --wheel
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@v1.4.2
