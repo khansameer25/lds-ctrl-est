@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build", "setuptools", "wheel", "cmake"]
+requires = ["scikit-build-core", "setuptools", "wheel", "cmake"]
 build-backend = "skbuild"
 
 [project]
