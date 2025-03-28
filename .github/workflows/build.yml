@@ -99,6 +99,8 @@ jobs:
         run: pip install cibuildwheel
 
       - name: Build wheels
+        env:
+          CIBW_PROJECT_DIR: python
         run: cibuildwheel --output-dir wheelhouse
           
       - name: List built wheels
