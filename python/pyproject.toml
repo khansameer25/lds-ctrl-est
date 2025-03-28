@@ -1,6 +1,6 @@
 [build-system]
 requires = ["scikit-build-core", "setuptools", "wheel", "make", "scikit-build"]
-build-backend = "skbuild"
+build-backend = "skbuild.setuptools_build_meta"
 
 [project]
 name = "ldsctrlest"
