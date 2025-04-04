@@ -62,6 +62,7 @@ jobs:
         configurePreset: 'windows-release'
         buildPreset: 'windows-release'
         cmakeVersion: '3.31.6'
+        buildPresetAdditionalArgs: "['--config Release']"
         
     - name: Install and Update PATH (Windows only)
       if: runner.os == 'Windows'
