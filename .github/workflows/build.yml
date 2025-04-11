@@ -92,7 +92,7 @@ jobs:
      - name: Upgrade pip and install dependencies
        run: |
          python -m pip install --upgrade pip
-         pip install numpy pytest matplotlib cmake build
+         pip install numpy pytest matplotlib cmake==3.31.6 build
         
      - name: Configure and build Python modules with CMake
        run: |
