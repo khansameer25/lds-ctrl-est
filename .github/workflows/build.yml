@@ -80,7 +80,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout repository and submodules
@@ -120,7 +120,8 @@ jobs:
       - name: Build wheel and sdist
         run: |
           cd build/python
-          python -m build --wheel
+          mkdir -p ../../../wheels
+          python -m build --wheel --outdir ../../../wheels
 
       - name: Test wheel installation
         shell: bash
@@ -131,15 +132,34 @@ jobs:
           pip install dist/*.whl
           pip install numpy
           python -c "import ldsctrlest; print(ldsctrlest.__version__)"
-        
-      - name: Publish package to PyPI
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheel-${{ matrix.os }}
+          path: wheel/*.whl
+          
+  publish_all_wheels:
+    needs: build_python_package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: wheels
+
+      - name: List downloaded wheels
+        run: |
+          find wheels -name "*.whl"
+
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.4.2
         with:
-         user: __token__
-         password: ${{ secrets.PYPI_API_TOKEN }}
-         packages_dir: build/python/dist
-         repository_url: https://test.pypi.org/legacy/
-  
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: wheels
+          repository_url: https://test.pypi.org/legacy/
   
   
      # - name: Test PyPI Installation
