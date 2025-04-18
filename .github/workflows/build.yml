@@ -143,9 +143,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download all wheel artifacts
+      - name: Download macOS wheel
         uses: actions/download-artifact@v4
         with:
+          name: python-wheel-macos-latest
+          path: wheels
+
+      - name: Download lunux wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: python-wheel-ubuntu-latest
           path: wheels
 
       - name: List downloaded wheels
