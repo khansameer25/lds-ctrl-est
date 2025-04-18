@@ -154,11 +154,23 @@ jobs:
         with:
           name: python-wheel-ubuntu-latest
           path: wheels/ubuntu
-
+      
+      - name: Rename downloaded wheels to include platform
+        run: |
+          for f in wheels/macos/*.whl; do
+            base=$(basename "$f")
+            mv "$f" "wheels/macos/${base/.whl/-macosx.whl}"
+          done
+      
+          for f in wheels/ubuntu/*.whl; do
+            base=$(basename "$f")
+            mv "$f" "wheels/ubuntu/${base/.whl/-manylinux.whl}"
+          done
+      
       - name: List downloaded wheels
         run: |
           find wheels -name "*.whl"
-
+      
       - name: Publish macOS wheel
         uses: pypa/gh-action-pypi-publish@v1.4.2
         with:
