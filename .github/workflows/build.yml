@@ -166,8 +166,7 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           packages_dir: wheels/macos
           repository_url: https://test.pypi.org/legacy/
-        env:
-          TWINE_LOG_LEVEL: DEBUG
+          verbose: true
       
       - name: Publish Ubuntu wheel
         uses: pypa/gh-action-pypi-publish@v1.4.2
@@ -176,8 +175,7 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           packages_dir: wheels/ubuntu
           repository_url: https://test.pypi.org/legacy/
-        env:
-          TWINE_LOG_LEVEL: DEBUG
+          verbose: true
   
      # - name: Test PyPI Installation
      #   run: |
