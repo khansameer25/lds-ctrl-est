@@ -97,6 +97,7 @@ jobs:
           pip install cibuildwheel
 
       - name: Build wheels with cibuildwheel
+        working-directory: python
         run: |
           python -m cibuildwheel --output-dir wheelhouse
         env:
