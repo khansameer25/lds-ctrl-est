@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -132,13 +132,13 @@ jobs:
           pip install numpy
           python -c "import ldsctrlest; print(ldsctrlest.__version__)"
         
-     # - name: Publish package to PyPI
-     #   uses: pypa/gh-action-pypi-publish@v1.4.2
-     #   with:
-     #     user: __token__
-     #     password: ${{ secrets.PYPI_API_TOKEN }}
-     #     packages_dir: build/python/dist
-     #     repository_url: https://test.pypi.org/legacy/
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+         user: __token__
+         password: ${{ secrets.PYPI_API_TOKEN }}
+         packages_dir: build/python/dist
+         repository_url: https://test.pypi.org/legacy/
   
   
   
