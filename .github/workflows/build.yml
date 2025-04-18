@@ -147,26 +147,33 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-wheel-macos-latest
-          path: wheels
-
-      - name: Download lunux wheel
+          path: wheels/macos
+      
+      - name: Download Ubuntu wheel
         uses: actions/download-artifact@v4
         with:
           name: python-wheel-ubuntu-latest
-          path: wheels
+          path: wheels/ubuntu
 
       - name: List downloaded wheels
         run: |
           find wheels -name "*.whl"
 
-      - name: Publish to PyPI
+      - name: Publish macOS wheel
         uses: pypa/gh-action-pypi-publish@v1.4.2
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: wheels
+          packages_dir: wheels/macos
           repository_url: https://test.pypi.org/legacy/
-  
+      
+      - name: Publish Ubuntu wheel
+        uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: wheels/ubuntu
+          repository_url: https://test.pypi.org/legacy/
   
      # - name: Test PyPI Installation
      #   run: |
