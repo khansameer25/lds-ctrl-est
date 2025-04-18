@@ -128,8 +128,7 @@ jobs:
         run: |
           python -m venv test_env
           source test_env/bin/activate || . test_env/Scripts/activate
-          cd build/python
-          pip install dist/*.whl
+          pip install wheels/*.whl
           pip install numpy
           python -c "import ldsctrlest; print(ldsctrlest.__version__)"
 
@@ -137,7 +136,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-wheel-${{ matrix.os }}
-          path: wheel/*.whl
+          path: wheels/*.whl
           
   publish_all_wheels:
     needs: build_python_package
