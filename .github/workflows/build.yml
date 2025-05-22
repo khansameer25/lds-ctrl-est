@@ -106,7 +106,7 @@ jobs:
                 -DPYTHON_EXECUTABLE=$(which python) \
                 -DPYTHON_INCLUDE_DIR=$(python -c 'from sysconfig import get_paths as gp; print(gp()["include"])') \
                 -DPYTHON_LIBRARIES=$(python -c 'from sysconfig import get_paths as gp; print(gp()["stdlib"])') \
-                -G "Unix Makefiles" ..
+                ..
           cmake --build . --target python_modules
       - name: Install Python package and run tests
         run: |
