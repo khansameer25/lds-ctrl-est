@@ -74,15 +74,17 @@ jobs:
       run: |
         cd build
         ctest -C Release
-        
-  build_python_package:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+
+  publish:
+    name: Build and Upload Wheels to PyPI
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # Required for trusted publishing (no token needed)
 
     steps:
-      - name: Checkout repository and submodules
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
@@ -92,40 +94,67 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Upgrade pip and install dependencies
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel
+
+      - name: Build wheels using cibuildwheel
         run: |
-          python -m pip install --upgrade pip
-          pip install numpy pytest matplotlib cmake==3.31.6 build
-      - name: Configure and build Python modules with CMake
-        shell: bash
-        run: |
-          mkdir build && cd build
-          cmake -DLDSCTRLEST_BUILD_PYTHON=ON \
-                -DLDSCTRLEST_BUILD_STATIC=ON \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DPYTHON_EXECUTABLE=$(which python) \
-                -DPYTHON_INCLUDE_DIR=$(python -c 'from sysconfig import get_paths as gp; print(gp()["include"])') \
-                -DPYTHON_LIBRARIES=$(python -c 'from sysconfig import get_paths as gp; print(gp()["stdlib"])') \
-                ..
-          cmake --build . --target python_modules
-      - name: Install Python package and run tests
-        run: |
-          cd build/python
-          pip install .
-          pytest
-      - name: Build wheel and sdist
-        run: |
-          cd build/python
-          python -m build --wheel
-      - name: Test wheel installation
-        shell: bash
-        run: |
-          python -m venv test_env
-          source test_env/bin/activate || . test_env/Scripts/activate
-          cd build/python
-          pip install dist/*.whl
-          pip install numpy
-          python -c "import ldsctrlest; print(ldsctrlest.__version__)"
+          python -m cibuildwheel --output-dir dist
+        env:
+          CIBW_BUILD: "cp3*-manylinux_x86_64 cp3*-macosx_x86_64 cp3*-win_amd64"
+          CIBW_SKIP: "pp* cp36* cp37*"
+        
+  # build_python_package:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, windows-latest, macos-latest]
+
+  #   steps:
+  #     - name: Checkout repository and submodules
+  #       uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.13'
+
+  #     - name: Upgrade pip and install dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install numpy pytest matplotlib cmake==3.31.6 build
+  #     - name: Configure and build Python modules with CMake
+  #       shell: bash
+  #       run: |
+  #         mkdir build && cd build
+  #         cmake -DLDSCTRLEST_BUILD_PYTHON=ON \
+  #               -DLDSCTRLEST_BUILD_STATIC=ON \
+  #               -DCMAKE_BUILD_TYPE=Release \
+  #               -DPYTHON_EXECUTABLE=$(which python) \
+  #               -DPYTHON_INCLUDE_DIR=$(python -c 'from sysconfig import get_paths as gp; print(gp()["include"])') \
+  #               -DPYTHON_LIBRARIES=$(python -c 'from sysconfig import get_paths as gp; print(gp()["stdlib"])') \
+  #               -G "Unix Makefiles" ..
+  #         cmake --build . --target python_modules
+  #     - name: Install Python package and run tests
+  #       run: |
+  #         cd build/python
+  #         pip install .
+  #         pytest
+  #     - name: Build wheel and sdist
+  #       run: |
+  #         cd build/python
+  #         python -m build --wheel
+  #     - name: Test wheel installation
+  #       shell: bash
+  #       run: |
+  #         python -m venv test_env
+  #         source test_env/bin/activate || . test_env/Scripts/activate
+  #         cd build/python
+  #         pip install dist/*.whl
+  #         pip install numpy
+  #         python -c "import ldsctrlest; print(ldsctrlest.__version__)"
         
      # - name: Publish package to PyPI
      #   uses: pypa/gh-action-pypi-publish@v1.4.2
