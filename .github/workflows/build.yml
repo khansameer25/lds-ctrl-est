@@ -75,34 +75,67 @@ jobs:
         cd build
         ctest -C Release
 
-  publish:
-    name: Build and Upload Wheels to PyPI
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write  # Required for trusted publishing (no token needed)
-
+  python:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+  
     steps:
-      - name: Checkout repository
+      - name: Checkout repository and submodules
         uses: actions/checkout@v3
         with:
           submodules: recursive
-
+  
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
-
-      - name: Install cibuildwheel
-        run: pip install cibuildwheel
-
-      - name: Build wheels using cibuildwheel
+  
+      - name: Upgrade pip and install dependencies
         run: |
-          python -m cibuildwheel python --output-dir dist
-        env:
-          CIBW_BUILD: "cp3*-manylinux_x86_64 cp3*-macosx_x86_64 cp3*-win_amd64"
-          CIBW_SKIP: "pp* cp36* cp37*"
+          python -m pip install --upgrade pip
+          pip install numpy pytest matplotlib cmake==3.31.6
+  
+      - name: Configure and build Python modules with CMake
+        shell: bash
+        run: |
+          mkdir build && cd build
+          cmake -DLDSCTRLEST_BUILD_PYTHON=ON \
+                -DLDSCTRLEST_BUILD_STATIC=ON \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DPYTHON_EXECUTABLE=$(which python) \
+                -DPYTHON_INCLUDE_DIR=$(python -c 'from sysconfig import get_paths as gp; print(gp()["include"])') \
+                -DPYTHON_LIBRARIES=$(python -c 'from sysconfig import get_paths as gp; print(gp()["stdlib"])') \
+                -G "Unix Makefiles" ..
+          cmake --build . --target python_modules
+  
+      - name: Install Python package and run tests
+        run: |
+          cd build/python
+          pip install .
+          pytest
+  
+      - name: Build wheel and sdist with setup.py
+        shell: bash
+        run: |
+          cd build/python
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            python setup.py bdist_wheel --plat-name=macosx_13_0_arm64
+          else
+            python setup.py bdist_wheel --plat-name=manylinux_2_28_x86_64
+          fi
+          python setup.py sdist
+  
+      - name: Test wheel installation
+        shell: bash
+        run: |
+          python -m venv test_env
+          source test_env/bin/activate || . test_env/Scripts/activate
+          cd build/python
+          pip install dist/*.whl
+          pip install numpy
+          python -c "import ldsctrlest; print(ldsctrlest.__version__)"
         
   # build_python_package:
   #   runs-on: ${{ matrix.os }}
