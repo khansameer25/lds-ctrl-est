@@ -99,7 +99,7 @@ jobs:
 
       - name: Build wheels using cibuildwheel
         run: |
-          python -m cibuildwheel --output-dir dist
+          python -m cibuildwheel python --output-dir dist
         env:
           CIBW_BUILD: "cp3*-manylinux_x86_64 cp3*-macosx_x86_64 cp3*-win_amd64"
           CIBW_SKIP: "pp* cp36* cp37*"
