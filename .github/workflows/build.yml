@@ -98,6 +98,8 @@ jobs:
           pip install numpy pytest matplotlib cmake==3.31.6 setuptools build
           if [ "${{ runner.os }}" == "Linux" ]; then
             pip install auditwheel
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            pip install delocate
           fi
   
       - name: Configure and build Python modules with CMake
@@ -132,6 +134,18 @@ jobs:
           cd build/python
           for whl in dist/*.whl; do
             auditwheel repair "$whl" -w dist_repaired/
+          done
+          rm dist/*.whl
+          mv dist_repaired/*.whl dist/
+
+      - name: Repair macOS wheel with delocate
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          cd build/python
+          mkdir -p dist_repaired
+          for whl in dist/*.whl; do
+            delocate-wheel "$whl" -w dist_repaired/
           done
           rm dist/*.whl
           mv dist_repaired/*.whl dist/
