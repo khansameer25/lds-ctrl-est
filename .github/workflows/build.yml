@@ -135,7 +135,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: python-dists-ubuntu-latest
+          name: python-dists-${{ matrix.os }}
           path: build/python/dist/*
 
   publish:
