@@ -116,25 +116,11 @@ jobs:
           pip install .
           pytest
   
-      - name: Build wheel and sdist with setup.py
+      - name: Build wheel
         shell: bash
         run: |
           cd build/python
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            python setup.py bdist_wheel --plat-name=macosx_13_0_arm64
-          else
-            python setup.py bdist_wheel --plat-name=manylinux_2_28_x86_64
-          fi
-          python setup.py sdist
-
-      - name: Fix wheel dylib dependencies on macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          pip install delocate
-          cd build/python
-          mkdir -p fixed_wheels
-          delocate-wheel -w fixed_wheels dist/*.whl
-          ls -l fixed_wheels
+          python -m build --wheel
   
       - name: Test wheel installation
         shell: bash
@@ -143,22 +129,10 @@ jobs:
           source test_env/bin/activate || . test_env/Scripts/activate
           cd build/python
           pip install numpy
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            pip install fixed_wheels/*.whl
-          else
-            pip install dist/*.whl
-          fi
+          pip install dist/*.whl
           python -c "import ldsctrlest; print(ldsctrlest.__version__)"
-
-      - name: Upload fixed wheels on macOS
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-dists-macos-latest
-          path: build/python/fixed_wheels/*
       
-      - name: Upload normal wheels on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: python-dists-ubuntu-latest
