@@ -96,6 +96,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install numpy pytest matplotlib cmake==3.31.6 setuptools build
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            pip install auditwheel
+          fi
   
       - name: Configure and build Python modules with CMake
         shell: bash
@@ -121,6 +124,17 @@ jobs:
         run: |
           cd build/python
           python -m build --wheel
+
+      - name: Repair Linux wheel with auditwheel
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          cd build/python
+          for whl in dist/*.whl; do
+            auditwheel repair "$whl" -w dist_repaired/
+          done
+          rm dist/*.whl
+          mv dist_repaired/*.whl dist/
   
       - name: Test wheel installation
         shell: bash
