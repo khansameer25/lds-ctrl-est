@@ -14,7 +14,6 @@ requires-python = ">=3.8"
 [tool.scikit-build]
 cmake.source-dir = ".."
 cmake.args = [
-    # THIS IS THE FINAL FIX: Use a robust relative path.
     "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake",
     "-DLDSCTRLEST_BUILD_PYTHON=ON",
     "-DLDSCTRLEST_BUILD_STATIC=ON"
@@ -27,6 +26,9 @@ install-dir = "ldsctrlest"
 
 # --- cibuildwheel configuration ---
 [tool.cibuildwheel]
+# THIS IS THE FIX: Pre-install numpy and pybind11 into the build environment.
+build-requires = ["numpy", "pybind11"]
+
 # Default before-build command for macOS & Linux
 before-build = "git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 # Skip platforms we don't need
