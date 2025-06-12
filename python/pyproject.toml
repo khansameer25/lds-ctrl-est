@@ -35,6 +35,7 @@ build-verbosity = 1
 [tool.cibuildwheel.linux]
 # For Linux only, first install vcpkg's dependencies using yum, then run the bootstrap.
 # We don't need `sudo` because we are already root inside the container.
+manylinux-x86_64-image = "manylinux_2_28"
 before-build = "yum install -y zip unzip tar curl && git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 
 
