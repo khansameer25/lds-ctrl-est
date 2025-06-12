@@ -1,5 +1,6 @@
 [build-system]
-requires = ["scikit-build-core>=0.8", "pybind11"]
+# THIS IS THE FIX: Add "numpy" to the list of build-system requirements.
+requires = ["scikit-build-core>=0.8", "pybind11", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -26,9 +27,6 @@ install-dir = "ldsctrlest"
 
 # --- cibuildwheel configuration ---
 [tool.cibuildwheel]
-# THIS IS THE FIX: Pre-install numpy and pybind11 into the build environment.
-build-requires = ["numpy", "pybind11"]
-
 # Default before-build command for macOS & Linux
 before-build = "git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 # Skip platforms we don't need
