@@ -1,5 +1,4 @@
 [build-system]
-# We can remove cmake and ninja as scikit-build-core handles them
 requires = ["scikit-build-core>=0.8", "pybind11"]
 build-backend = "scikit_build_core.build"
 
@@ -15,8 +14,8 @@ requires-python = ">=3.8"
 [tool.scikit-build]
 cmake.source-dir = ".."
 cmake.args = [
-    # THIS IS THE FIX: Use ${CMAKE_SOURCE_DIR} which is guaranteed to be correct.
-    "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+    # THIS IS THE FINAL FIX: Use a robust relative path.
+    "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake",
     "-DLDSCTRLEST_BUILD_PYTHON=ON",
     "-DLDSCTRLEST_BUILD_STATIC=ON"
 ]
