@@ -92,6 +92,8 @@ jobs:
 
       - name: Build wheels with cibuildwheel
         uses: pypa/cibuildwheel@v2.19.1
+        with:
+          package-dir: python
         # No extra environment variables are needed here because all of the
         # configuration is already in your pyproject.toml file.
 
