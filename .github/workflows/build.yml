@@ -75,198 +75,28 @@ jobs:
         cd build
         ctest -C Release
 
-  python:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      # Build on all three major platforms
       matrix:
-        os: [ubuntu-latest, macos-latest]
-  
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          submodules: recursive
-  
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-  
-      - name: Upgrade pip and install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install numpy pytest matplotlib cmake==3.31.6 setuptools build
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            pip install auditwheel
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            pip install delocate
-          fi
-  
-      - name: Configure and build Python modules with CMake
-        shell: bash
-        run: |
-          mkdir build && cd build
-          cmake -DLDSCTRLEST_BUILD_PYTHON=ON \
-                -DLDSCTRLEST_BUILD_STATIC=ON \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DPYTHON_EXECUTABLE=$(which python) \
-                -DPYTHON_INCLUDE_DIR=$(python -c 'from sysconfig import get_paths as gp; print(gp()["include"])') \
-                -DPYTHON_LIBRARIES=$(python -c 'from sysconfig import get_paths as gp; print(gp()["stdlib"])') \
-                -G "Unix Makefiles" ..
-          cmake --build . --target python_modules
-  
-      - name: Install Python package and run tests
-        run: |
-          cd build/python
-          pip install .
-          pytest
-  
-      - name: Build wheel
-        shell: bash
-        run: |
-          cd build/python
-          python -m build --wheel
+          # This is critical to get your vcpkg submodule
+          submodules: 'recursive'
 
-      - name: Repair Linux wheel with auditwheel
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          cd build/python
-          for whl in dist/*.whl; do
-            auditwheel repair "$whl" -w dist_repaired/
-          done
-          rm dist/*.whl
-          mv dist_repaired/*.whl dist/
+      - name: Build wheels with cibuildwheel
+        uses: pypa/cibuildwheel@v2.19.1
+        # No extra environment variables are needed here because all of the
+        # configuration is already in your pyproject.toml file.
 
-      - name: Repair macOS wheel with delocate
-        if: matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          cd build/python
-          mkdir -p dist_repaired
-          for whl in dist/*.whl; do
-            delocate-wheel "$whl" -w dist_repaired/
-          done
-          rm dist/*.whl
-          mv dist_repaired/*.whl dist/
-  
-      - name: Test wheel installation
-        shell: bash
-        run: |
-          python -m venv test_env
-          source test_env/bin/activate || . test_env/Scripts/activate
-          cd build/python
-          pip install numpy
-          pip install dist/*.whl
-          python -c "import ldsctrlest; print(ldsctrlest.__version__)"
-      
-      - name: Upload wheels
+      - name: Store built wheels as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-dists-${{ matrix.os }}
-          path: build/python/dist/*
-
-  publish:
-    needs: python
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Download all dist artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: python-dists-*
-          path: dist
-          merge-multiple: true
-
-      - name: Publish package to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.4.2
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: dist
-          repository_url: https://test.pypi.org/legacy/
-          verbose: true
-        
-  # build_python_package:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest, windows-latest, macos-latest]
-
-  #   steps:
-  #     - name: Checkout repository and submodules
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.13'
-
-  #     - name: Upgrade pip and install dependencies
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install numpy pytest matplotlib cmake==3.31.6 build
-  #     - name: Configure and build Python modules with CMake
-  #       shell: bash
-  #       run: |
-  #         mkdir build && cd build
-  #         cmake -DLDSCTRLEST_BUILD_PYTHON=ON \
-  #               -DLDSCTRLEST_BUILD_STATIC=ON \
-  #               -DCMAKE_BUILD_TYPE=Release \
-  #               -DPYTHON_EXECUTABLE=$(which python) \
-  #               -DPYTHON_INCLUDE_DIR=$(python -c 'from sysconfig import get_paths as gp; print(gp()["include"])') \
-  #               -DPYTHON_LIBRARIES=$(python -c 'from sysconfig import get_paths as gp; print(gp()["stdlib"])') \
-  #               -G "Unix Makefiles" ..
-  #         cmake --build . --target python_modules
-  #     - name: Install Python package and run tests
-  #       run: |
-  #         cd build/python
-  #         pip install .
-  #         pytest
-  #     - name: Build wheel and sdist
-  #       run: |
-  #         cd build/python
-  #         python -m build --wheel
-  #     - name: Test wheel installation
-  #       shell: bash
-  #       run: |
-  #         python -m venv test_env
-  #         source test_env/bin/activate || . test_env/Scripts/activate
-  #         cd build/python
-  #         pip install dist/*.whl
-  #         pip install numpy
-  #         python -c "import ldsctrlest; print(ldsctrlest.__version__)"
-        
-     # - name: Publish package to PyPI
-     #   uses: pypa/gh-action-pypi-publish@v1.4.2
-     #   with:
-     #     user: __token__
-     #     password: ${{ secrets.PYPI_API_TOKEN }}
-     #     packages_dir: build/python/dist
-     #     repository_url: https://test.pypi.org/legacy/
-  
-  
-  
-     # - name: Test PyPI Installation
-     #   run: |
-     #     python -m venv pypi_test_env
-     #     source pypi_test_env/bin/activate
-        
-     #     pip install -v -i https://test.pypi.org/simple/ ldsctrlest
-     #     pip install numpy
-        
-     #     echo "Installed packages:"
-     #     pip list
-        
-     #     echo "Package contents:"
-     #     python -c "import os, ldsctrlest; print('\n'.join(os.path.join(root,f) for root,_,files in os.walk(os.path.dirname(ldsctrlest.__file__)) for f in files))"
-        
-     #     python -c "import ldsctrlest; print('SUCCESS:', ldsctrlest.__version__)"
-     #   env:
-     #     PIP_FIND_LINKS: "https://pypi.org/simple"
-     #     PIP_VERBOSE: 1
+          name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
