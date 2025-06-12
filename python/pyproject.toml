@@ -24,17 +24,25 @@ packages = ["ldsctrlest"]
 
 # --- cibuildwheel configuration ---
 [tool.cibuildwheel]
-# Default before-build command for Linux & macOS
+# This is now the default for non-Windows, non-Linux builds (i.e., macOS)
 before-build = "git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 # Skip platforms we don't need
 skip = ["*-musllinux*", "*i686"]
 # Increase verbosity for better logs
 build-verbosity = 1
 
+
+[tool.cibuildwheel.linux]
+# For Linux only, first install vcpkg's dependencies using yum, then run the bootstrap.
+# We don't need `sudo` because we are already root inside the container.
+before-build = "yum install -y zip unzip tar curl && git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
+
+
 [tool.cibuildwheel.windows]
-# Override the before-build step specifically for Windows
+# This remains the same for Windows
 before-build = "git submodule update --init --recursive && .\\vcpkg\\bootstrap-vcpkg.bat"
 
+
 [tool.cibuildwheel.macos]
-# Automatically build universal2 wheels
+# This remains the same for macOS
 archs = ["auto"]
