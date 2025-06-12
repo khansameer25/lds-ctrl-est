@@ -116,6 +116,7 @@ endif()
 # pkg-config used for libraries that were not installed with CMake config files.
 # provides `pkg_check_modules`
 find_package(PkgConfig)
+find_package(Python3 3.7 COMPONENTS Interpreter Development NumPy REQUIRED)
 find_package(Doxygen COMPONENTS dot
              OPTIONAL_COMPONENTS mscgen dia)
 
