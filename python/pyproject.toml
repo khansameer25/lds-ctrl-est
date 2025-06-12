@@ -1,5 +1,6 @@
 [build-system]
-requires = ["scikit-build-core>=0.8", "cmake>=3.21", "ninja", "pybind11"]
+# We can remove cmake and ninja as scikit-build-core handles them
+requires = ["scikit-build-core>=0.8", "pybind11"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -14,17 +15,20 @@ requires-python = ">=3.8"
 [tool.scikit-build]
 cmake.source-dir = ".."
 cmake.args = [
-    "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+    # THIS IS THE FIX: Use ${CMAKE_SOURCE_DIR} which is guaranteed to be correct.
+    "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake",
     "-DLDSCTRLEST_BUILD_PYTHON=ON",
     "-DLDSCTRLEST_BUILD_STATIC=ON"
 ]
+
 [tool.scikit-build.wheel]
 packages = ["ldsctrlest"]
 install-dir = "ldsctrlest"
 
+
 # --- cibuildwheel configuration ---
 [tool.cibuildwheel]
-# This is now the default for non-Windows, non-Linux builds (i.e., macOS)
+# Default before-build command for macOS & Linux
 before-build = "git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 # Skip platforms we don't need
 skip = ["*-musllinux*", "*i686"]
@@ -33,17 +37,17 @@ build-verbosity = 1
 
 
 [tool.cibuildwheel.linux]
-# For Linux only, first install vcpkg's dependencies using yum, then run the bootstrap.
-# We don't need `sudo` because we are already root inside the container.
+# Use the modern manylinux_2_28 image.
 manylinux-x86_64-image = "manylinux_2_28"
+# For Linux only, first install vcpkg's dependencies using yum.
 before-build = "yum install -y zip unzip tar curl && git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 
 
 [tool.cibuildwheel.windows]
-# This remains the same for Windows
+# Override the before-build step specifically for Windows
 before-build = "git submodule update --init --recursive && .\\vcpkg\\bootstrap-vcpkg.bat"
 
 
 [tool.cibuildwheel.macos]
-# This remains the same for macOS
+# Automatically build universal2 wheels
 archs = ["auto"]
