@@ -18,9 +18,9 @@ cmake.args = [
     "-DLDSCTRLEST_BUILD_PYTHON=ON",
     "-DLDSCTRLEST_BUILD_STATIC=ON"
 ]
-cmake.install-dir = "ldsctrlest"
 [tool.scikit-build.wheel]
 packages = ["ldsctrlest"]
+install-dir = "ldsctrlest"
 
 # --- cibuildwheel configuration ---
 [tool.cibuildwheel]
