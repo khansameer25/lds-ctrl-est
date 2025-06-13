@@ -197,6 +197,7 @@ message(STATUS "PROJECT_REQUIRED_INCLUDE_DIRS = \
 ################################################################################
 ############ Add Targets
 ################################################################################
+list(REMOVE_ITEM PROJECT_REQUIRED_LIBRARIES "Python3::Python")
 # library itself
 add_library(${CMAKE_PROJECT_NAME} SHARED)
 target_link_libraries(${CMAKE_PROJECT_NAME}
