@@ -116,7 +116,6 @@ endif()
 # pkg-config used for libraries that were not installed with CMake config files.
 # provides `pkg_check_modules`
 find_package(PkgConfig)
-find_package(Python3 3.7 COMPONENTS Interpreter Development NumPy REQUIRED)
 find_package(Doxygen COMPONENTS dot
              OPTIONAL_COMPONENTS mscgen dia)
 
@@ -136,6 +135,7 @@ endif()
 
 if (LDSCTRLEST_BUILD_PYTHON)
 # for pybind11 wrappers target
+  find_package(Python3 3.7 COMPONENTS Interpreter Development NumPy REQUIRED)
   include(pybind11)
   if (NOT (LDSCTRLEST_BUILD_PYTHON AND pybind11_FOUND AND Python_FOUND))
     set(LDSCTRLEST_BUILD_PYTHON OFF)
