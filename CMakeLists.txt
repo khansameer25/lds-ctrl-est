@@ -135,7 +135,6 @@ endif()
 
 if (LDSCTRLEST_BUILD_PYTHON)
 # for pybind11 wrappers target
-  find_package(Python3 3.7 COMPONENTS Interpreter Development NumPy REQUIRED)
   include(pybind11)
   if (NOT (LDSCTRLEST_BUILD_PYTHON AND pybind11_FOUND AND Python_FOUND))
     set(LDSCTRLEST_BUILD_PYTHON OFF)
