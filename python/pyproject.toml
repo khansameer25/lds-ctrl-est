@@ -1,6 +1,5 @@
 [build-system]
-# THIS IS THE FIX: Add "numpy" to the list of build-system requirements.
-# pybind11 is also added here as it's a direct build dependency.
+# This section is correct and tells pip how to start the build.
 requires = ["scikit-build-core>=0.8", "pybind11", "numpy"]
 build-backend = "scikit_build_core.build"
 
@@ -19,7 +18,7 @@ cmake.args = [
     "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake",
     "-DLDSCTRLEST_BUILD_PYTHON=ON",
     "-DLDSCTRLEST_BUILD_STATIC=ON",
-    # Disable the example programs for the wheel build, as they have link errors.
+    # Disable the example programs for the wheel build
     "-DLDSCTRLEST_BUILD_EXAMPLES=OFF"
 ]
 
@@ -30,7 +29,7 @@ install-dir = "ldsctrlest"
 
 # --- cibuildwheel configuration ---
 [tool.cibuildwheel]
-# Default before-build command for macOS & Linux
+# Default before-build command for macOS
 before-build = "git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 # Skip platforms we don't need
 skip = ["*-musllinux*", "*i686"]
@@ -39,10 +38,12 @@ build-verbosity = 1
 
 
 [tool.cibuildwheel.linux]
-# Use the modern manylinux_2_28 image.
+# Use the modern manylinux_2_28 image
 manylinux-x86_64-image = "manylinux_2_28"
-# For Linux only, first install vcpkg's dependencies using yum.
+# For Linux, install dependencies first
 before-build = "yum install -y zip unzip tar curl && git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
+# THIS IS THE FINAL FIX: Tell auditwheel where to find the .so files inside the wheel.
+repair-wheel-command = "auditwheel repair --lib-sdir ldsctrlest -w {dest_dir} {wheel}"
 
 
 [tool.cibuildwheel.windows]
