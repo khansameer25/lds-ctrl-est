@@ -1,5 +1,4 @@
 [build-system]
-# THIS IS THE FIX: Add "numpy" to the list of build-system requirements.
 requires = ["scikit-build-core>=0.8", "pybind11", "numpy"]
 build-backend = "scikit_build_core.build"
 
@@ -17,7 +16,9 @@ cmake.source-dir = ".."
 cmake.args = [
     "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake",
     "-DLDSCTRLEST_BUILD_PYTHON=ON",
-    "-DLDSCTRLEST_BUILD_STATIC=ON"
+    "-DLDSCTRLEST_BUILD_STATIC=ON",
+    # THIS IS THE FIX: Disable the example programs for the wheel build.
+    "-DLDSCTRLEST_BUILD_EXAMPLES=OFF"
 ]
 
 [tool.scikit-build.wheel]
@@ -27,26 +28,17 @@ install-dir = "ldsctrlest"
 
 # --- cibuildwheel configuration ---
 [tool.cibuildwheel]
-# Default before-build command for macOS & Linux
+build-requires = ["numpy", "pybind11"]
 before-build = "git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
-# Skip platforms we don't need
 skip = ["*-musllinux*", "*i686"]
-# Increase verbosity for better logs
 build-verbosity = 1
 
-
 [tool.cibuildwheel.linux]
-# Use the modern manylinux_2_28 image.
 manylinux-x86_64-image = "manylinux_2_28"
-# For Linux only, first install vcpkg's dependencies using yum.
 before-build = "yum install -y zip unzip tar curl && git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
 
-
 [tool.cibuildwheel.windows]
-# Override the before-build step specifically for Windows
 before-build = "git submodule update --init --recursive && .\\vcpkg\\bootstrap-vcpkg.bat"
 
-
 [tool.cibuildwheel.macos]
-# Automatically build universal2 wheels
 archs = ["auto"]
