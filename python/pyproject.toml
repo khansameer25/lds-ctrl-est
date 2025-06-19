@@ -42,9 +42,6 @@ build-verbosity = 1
 manylinux-x86_64-image = "manylinux_2_28"
 # For Linux, install dependencies first
 before-build = "yum install -y zip unzip tar curl && git submodule update --init --recursive && ./vcpkg/bootstrap-vcpkg.sh"
-# THIS IS THE FINAL FIX: Tell auditwheel where to find the .so files inside the wheel.
-repair-wheel-command = "auditwheel repair --lib-sdir ldsctrlest -w {dest_dir} {wheel}"
-
 
 [tool.cibuildwheel.windows]
 # Override the before-build step specifically for Windows
