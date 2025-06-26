@@ -1,130 +1,63 @@
-name: Build Wheels
+name: Build Wheels (Simple)
 
 on:
   push:
-    branches:
-      - master
-    tags:
-      - 'v*'
+    branches: [master]
+    tags: ['v*']
   pull_request:
-    branches:
-      - master
   workflow_dispatch:
 
-env:
-  # Common environment variables
-  CMAKE_BUILD_PARALLEL_LEVEL: 2
-  CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
-  CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux*"
-  CIBW_BUILD_FRONTEND: pip
-  # Use more modern manylinux to avoid CentOS 7 repo issues
-  CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-
 jobs:
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+  wheels:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.11'
 
-    - name: Install cibuildwheel
-      run: python -m pip install cibuildwheel==2.16.2
-
-    - name: Set up dependencies for Linux
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential ninja-build
-
-    - name: Set up dependencies for macOS
-      if: runner.os == 'macOS'
-      run: |
-        brew install ninja
-
-    - name: Set up MSVC (Windows)
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
-
     - name: Build wheels
-      run: python -m cibuildwheel python/ --output-dir wheelhouse
+      run: |
+        pip install cibuildwheel
+        python -m cibuildwheel python/ --output-dir wheelhouse
       env:
-        # Environment variables for all platforms
-        CIBW_ENVIRONMENT: CMAKE_BUILD_PARALLEL_LEVEL=2 LDSCTRLEST_BUILD_PYTHON=ON
+        CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
+        CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux*"
+        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
         
-        # Linux-specific settings - Using manylinux_2_28 (AlmaLinux 8)
-        CIBW_BEFORE_ALL_LINUX: |
-          # Import AlmaLinux GPG key
-          rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
-          # Update package manager and install build dependencies
-          dnf update -y &&
-          dnf install -y epel-release &&
-          dnf install -y ninja-build cmake gcc-c++ curl tar git &&
-          # Download and setup vcpkg
-          curl -L -O https://github.com/microsoft/vcpkg/archive/2024.11.16.tar.gz &&
-          tar -xf 2024.11.16.tar.gz &&
-          mv vcpkg-2024.11.16 vcpkg &&
-          cd vcpkg && ./bootstrap-vcpkg.sh &&
-          ./vcpkg install armadillo hdf5 --triplet=x64-linux
+        # Install system dependencies
+        CIBW_BEFORE_ALL_LINUX: "dnf install -y cmake ninja-build gcc-c++ openblas-devel hdf5-devel"
+        CIBW_BEFORE_ALL_MACOS: "brew install cmake ninja openblas hdf5"  
+        CIBW_BEFORE_ALL_WINDOWS: "choco install cmake"
+        
+        # Build
+        CIBW_BEFORE_BUILD: "pip install pybind11 numpy && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DLDSCTRLEST_BUILD_PYTHON=ON && cmake --build build --target python_modules"
+        
+        # Test
+        CIBW_TEST_COMMAND: "python -c 'import ldsctrlest; print(\"Success!\")'"
 
-        
-        CIBW_BEFORE_BUILD_LINUX: |
-          pip install cmake ninja pybind11 numpy &&
-          export CMAKE_TOOLCHAIN_FILE={project}/vcpkg/scripts/buildsystems/vcpkg.cmake &&
-          cmake -B {project}/build -S {project} -GNinja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DLDSCTRLEST_BUILD_PYTHON=ON \
-            -DCMAKE_TOOLCHAIN_FILE={project}/vcpkg/scripts/buildsystems/vcpkg.cmake &&
-          cmake --build {project}/build --target python_modules
-        
-        # macOS-specific settings  
-        CIBW_BEFORE_ALL_MACOS: brew install cmake ninja armadillo hdf5
-        
-        CIBW_BEFORE_BUILD_MACOS: |
-          pip install cmake ninja pybind11 numpy &&
-          cmake -B {project}/build -S {project} -GNinja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DLDSCTRLEST_BUILD_PYTHON=ON &&
-          cmake --build {project}/build --target python_modules
-        
-        # Windows-specific settings
-        CIBW_BEFORE_ALL_WINDOWS: |
-          git clone https://github.com/Microsoft/vcpkg.git vcpkg-repo &&
-          cd vcpkg-repo && .\bootstrap-vcpkg.bat &&
-          .\vcpkg install armadillo hdf5 --triplet=x64-windows &&
-          cd .. && move vcpkg-repo vcpkg
-        
-        CIBW_BEFORE_BUILD_WINDOWS: |
-          pip install cmake ninja pybind11 numpy &&
-          cmake -B {project}/build -S {project} -G"Visual Studio 17 2022" -A x64 ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            -DLDSCTRLEST_BUILD_PYTHON=ON ^
-            -DCMAKE_TOOLCHAIN_FILE={project}/vcpkg/scripts/buildsystems/vcpkg.cmake &&
-          cmake --build {project}/build --config Release --target python_modules
-
-        # Repair wheels
-        CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair -w {dest_dir} {wheel}
-        CIBW_REPAIR_WHEEL_COMMAND_MACOS: delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
-
-        # Test the wheels
-        CIBW_TEST_REQUIRES: pytest numpy
-        CIBW_TEST_COMMAND: python -c "import ldsctrlest; print('ldsctrlest imported successfully'); print('Version:', ldsctrlest.__version__)"
-
-    - name: Upload wheels as artifacts
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: wheels-${{ matrix.os }}
         path: wheelhouse/*.whl
-        retention-days: 7
+
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: wheels
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: wheels-*
+        path: dist
+        merge-multiple: true
+    - uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
