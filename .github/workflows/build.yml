@@ -17,6 +17,8 @@ env:
   CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
   CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux*"
   CIBW_BUILD_FRONTEND: pip
+  # Use more modern manylinux to avoid CentOS 7 repo issues
+  CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
 
 jobs:
   build_wheels:
@@ -62,9 +64,13 @@ jobs:
         # Environment variables for all platforms
         CIBW_ENVIRONMENT: CMAKE_BUILD_PARALLEL_LEVEL=2 LDSCTRLEST_BUILD_PYTHON=ON
         
-        # Linux-specific settings
+        # Linux-specific settings - Using manylinux_2_28 (AlmaLinux 8)
         CIBW_BEFORE_ALL_LINUX: |
-          yum install -y ninja-build cmake3 gcc-c++ curl tar &&
+          # Update package manager and install build dependencies
+          dnf update -y &&
+          dnf install -y epel-release &&
+          dnf install -y ninja-build cmake gcc-c++ curl tar git &&
+          # Download and setup vcpkg
           curl -L -O https://github.com/microsoft/vcpkg/archive/2024.11.16.tar.gz &&
           tar -xf 2024.11.16.tar.gz &&
           mv vcpkg-2024.11.16 vcpkg &&
@@ -119,27 +125,3 @@ jobs:
         name: wheels-${{ matrix.os }}
         path: wheelhouse/*.whl
         retention-days: 7
-
-  # upload_all:
-  #   name: Upload wheels to PyPI
-  #   needs: [build_wheels]
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    
-  #   steps:
-  #   - name: Download all artifacts
-  #     uses: actions/download-artifact@v4
-  #     with:
-  #       pattern: wheels-*
-  #       path: dist
-  #       merge-multiple: true
-
-  #   - name: List downloaded files
-  #     run: ls -la dist/
-
-  #   - name: Publish to PyPI
-  #     uses: pypa/gh-action-pypi-publish@release/v1
-  #     with:
-  #       user: __token__
-  #       password: ${{ secrets.PYPI_API_TOKEN }}
-  #       skip-existing: true
