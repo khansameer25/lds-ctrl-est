@@ -62,6 +62,9 @@ build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
 # Skip 32-bit builds and musl linux
 skip = ["*-win32", "*-manylinux_i686", "*-musllinux*"]
 
+# Use modern manylinux image to avoid CentOS 7 repo issues
+manylinux-x86_64-image = "manylinux_2_28"
+
 # Build frontend
 build-frontend = "pip"
 
@@ -75,19 +78,25 @@ test-command = "python -c 'import ldsctrlest; print(\"Import successful\")'"
 # Platform-specific settings
 [tool.cibuildwheel.linux]
 before-all = [
-    "yum install -y ninja-build",
+    "dnf update -y",
+    "dnf install -y epel-release",
+    "dnf install -y ninja-build cmake gcc-c++ curl tar git",
     "curl -L -O https://github.com/microsoft/vcpkg/archive/2024.11.16.tar.gz",
     "tar -xf 2024.11.16.tar.gz",
     "mv vcpkg-2024.11.16 vcpkg",
-    "./vcpkg/bootstrap-vcpkg.sh",
+    "cd vcpkg && ./bootstrap-vcpkg.sh",
     "./vcpkg/vcpkg install armadillo hdf5 --triplet=x64-linux"
 ]
 
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]
-before-all = "brew install ninja armadillo hdf5"
+before-all = "brew install cmake ninja armadillo hdf5"
 repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
 
 [tool.cibuildwheel.windows]
-before-all = "vcpkg install armadillo hdf5 --triplet=x64-windows"
+before-all = [
+    "git clone https://github.com/Microsoft/vcpkg.git vcpkg",
+    "cd vcpkg && .\\bootstrap-vcpkg.bat",
+    ".\\vcpkg\\vcpkg install armadillo hdf5 --triplet=x64-windows"
+]
