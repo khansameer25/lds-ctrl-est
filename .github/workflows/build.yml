@@ -66,6 +66,8 @@ jobs:
         
         # Linux-specific settings - Using manylinux_2_28 (AlmaLinux 8)
         CIBW_BEFORE_ALL_LINUX: |
+          # Import AlmaLinux GPG key
+          rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
           # Update package manager and install build dependencies
           dnf update -y &&
           dnf install -y epel-release &&
@@ -76,6 +78,7 @@ jobs:
           mv vcpkg-2024.11.16 vcpkg &&
           cd vcpkg && ./bootstrap-vcpkg.sh &&
           ./vcpkg install armadillo hdf5 --triplet=x64-linux
+
         
         CIBW_BEFORE_BUILD_LINUX: |
           pip install cmake ninja pybind11 numpy &&
