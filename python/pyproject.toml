@@ -1,102 +1,19 @@
 [build-system]
-requires = [
-    "setuptools>=45",
-    "wheel",
-    "pybind11>=2.10.0",
-    "cmake>=3.18",
-    "ninja",
-    "numpy",
-]
+requires = ["setuptools>=45", "wheel", "pybind11", "cmake", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ldsctrlest"
 version = "0.9.0"
-description = "Python bindings for ldsCtrlEst - estimation and control of linear dynamical systems"
+description = "Python bindings for ldsCtrlEst"
 authors = [{ name = "Kyle Johnsen" }, { name = "Michael Bolus" }]
 license = { text = "Apache-2.0" }
 requires-python = ">=3.9"
-dependencies = [
-    "numpy",
-]
-readme = { file = "../README.md", content-type = "text/markdown" }
-keywords = ["control", "estimation", "linear systems", "dynamical systems", "neuroscience"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research", 
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: C++",
-    "Topic :: Scientific/Engineering",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
-
-[project.urls]
-Homepage = "https://github.com/CLOCTools/lds-ctrl-est"
-Documentation = "https://cloctools.github.io/lds-ctrl-est/"
-Repository = "https://github.com/CLOCTools/lds-ctrl-est.git"
-Issues = "https://github.com/CLOCTools/lds-ctrl-est/issues"
-
-[project.optional-dependencies]
-test = ["pytest", "numpy"]
+dependencies = ["numpy"]
 
 [tool.setuptools]
 packages = ["ldsctrlest"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-ldsctrlest = ["*.pyd", "*.lib", "*.pdb", "*.so", "*.dylib", "*.dll"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-
-[tool.cibuildwheel]
-# Build for these Python versions
-build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
-
-# Skip 32-bit builds and musl linux
-skip = ["*-win32", "*-manylinux_i686", "*-musllinux*"]
-
-# Use modern manylinux image to avoid CentOS 7 repo issues
-manylinux-x86_64-image = "manylinux_2_28"
-
-# Build frontend
-build-frontend = "pip"
-
-# Environment variables
-environment = { CMAKE_BUILD_PARALLEL_LEVEL = "2", LDSCTRLEST_BUILD_PYTHON = "ON" }
-
-# Test the built wheels
-test-requires = ["pytest", "numpy"]
-test-command = "python -c 'import ldsctrlest; print(\"Import successful\")'"
-
-# Platform-specific settings
-[tool.cibuildwheel.linux]
-before-all = [
-    "dnf update -y",
-    "dnf install -y epel-release",
-    "dnf install -y ninja-build cmake gcc-c++ curl tar git",
-    "curl -L -O https://github.com/microsoft/vcpkg/archive/2024.11.16.tar.gz",
-    "tar -xf 2024.11.16.tar.gz",
-    "mv vcpkg-2024.11.16 vcpkg",
-    "cd vcpkg && ./bootstrap-vcpkg.sh",
-    "./vcpkg/vcpkg install armadillo hdf5 --triplet=x64-linux"
-]
-
-repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
-
-[tool.cibuildwheel.macos]
-before-all = "brew install cmake ninja armadillo hdf5"
-repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
-
-[tool.cibuildwheel.windows]
-before-all = [
-    "git clone https://github.com/Microsoft/vcpkg.git vcpkg",
-    "cd vcpkg && .\\bootstrap-vcpkg.bat",
-    ".\\vcpkg\\vcpkg install armadillo hdf5 --triplet=x64-windows"
-]
+ldsctrlest = ["*.pyd", "*.so", "*.dylib", "*.dll"]
