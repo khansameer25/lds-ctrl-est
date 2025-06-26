@@ -1,77 +1,145 @@
-name: Build and Test ldsCtrlEst
+name: Build Wheels
 
 on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
   pull_request:
+    branches:
+      - master
   workflow_dispatch:
 
-jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+env:
+  # Common environment variables
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+  CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
+  CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux*"
+  CIBW_BUILD_FRONTEND: pip
 
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Set up dependencies for macOS and Linux
-      if: runner.os != 'Windows'
-      run: |
-        if [ "${{ runner.os }}" == "macOS" ]; then
-          brew install ninja
-        elif [ "${{ runner.os }}" == "Linux" ]; then
-          sudo apt-get update
-          sudo apt-get install -y build-essential
-        fi
-  
-    - name: Run vcpkg
-      uses: lukka/run-vcpkg@v11
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        vcpkgJsonGlob: 'vcpkg.json'
-        runVcpkgInstall: true
-        
-    - name: Cache build directory
-      uses: actions/cache@v3
-      with:
-        path: build
-        key: build-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt') }}
-        restore-keys: |
-          build-${{ matrix.os }}-
-          
-    - name: Configure and build for macOS/Linux
-      if: runner.os != 'Windows'
-      uses: lukka/run-cmake@v10
-      with:
-        cmakeListsTxtPath: CMakeLists.txt
-        configurePreset: 'linux-release'
-        buildPreset: 'linux-release'
-        cmakeVersion: '3.31.6'
+        python-version: '3.11'
 
-    - name: Configure and build for Windows
-      if: runner.os == 'Windows'
-      uses: lukka/run-cmake@v10
-      with:
-        cmakeListsTxtPath: CMakeLists.txt
-        configurePreset: 'windows-release'
-        buildPreset: 'windows-release'
-        buildPresetAdditionalArgs: "['--config Release']"
-        cmakeVersion: '3.31.6'
-        
-    - name: Install and Update PATH (Windows only)
-      if: runner.os == 'Windows'
-      run: |
-        cd build
-        cmake --install .
-        echo "${{github.workspace}}/install/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Install cibuildwheel
+      run: python -m pip install cibuildwheel==2.16.2
 
-    - name: Run tests
+    - name: Set up dependencies for Linux
+      if: runner.os == 'Linux'
       run: |
-        cd build
-        ctest -C Release
+        sudo apt-get update
+        sudo apt-get install -y build-essential ninja-build
+
+    - name: Set up dependencies for macOS
+      if: runner.os == 'macOS'
+      run: |
+        brew install ninja
+
+    - name: Set up MSVC (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Build wheels
+      run: python -m cibuildwheel python/ --output-dir wheelhouse
+      env:
+        # Environment variables for all platforms
+        CIBW_ENVIRONMENT: CMAKE_BUILD_PARALLEL_LEVEL=2 LDSCTRLEST_BUILD_PYTHON=ON
+        
+        # Linux-specific settings
+        CIBW_BEFORE_ALL_LINUX: |
+          yum install -y ninja-build cmake3 gcc-c++ curl tar &&
+          curl -L -O https://github.com/microsoft/vcpkg/archive/2024.11.16.tar.gz &&
+          tar -xf 2024.11.16.tar.gz &&
+          mv vcpkg-2024.11.16 vcpkg &&
+          cd vcpkg && ./bootstrap-vcpkg.sh &&
+          ./vcpkg install armadillo hdf5 --triplet=x64-linux
+        
+        CIBW_BEFORE_BUILD_LINUX: |
+          pip install cmake ninja pybind11 numpy &&
+          export CMAKE_TOOLCHAIN_FILE={project}/vcpkg/scripts/buildsystems/vcpkg.cmake &&
+          cmake -B {project}/build -S {project} -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLDSCTRLEST_BUILD_PYTHON=ON \
+            -DCMAKE_TOOLCHAIN_FILE={project}/vcpkg/scripts/buildsystems/vcpkg.cmake &&
+          cmake --build {project}/build --target python_modules
+        
+        # macOS-specific settings  
+        CIBW_BEFORE_ALL_MACOS: brew install cmake ninja armadillo hdf5
+        
+        CIBW_BEFORE_BUILD_MACOS: |
+          pip install cmake ninja pybind11 numpy &&
+          cmake -B {project}/build -S {project} -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLDSCTRLEST_BUILD_PYTHON=ON &&
+          cmake --build {project}/build --target python_modules
+        
+        # Windows-specific settings
+        CIBW_BEFORE_ALL_WINDOWS: |
+          git clone https://github.com/Microsoft/vcpkg.git vcpkg-repo &&
+          cd vcpkg-repo && .\bootstrap-vcpkg.bat &&
+          .\vcpkg install armadillo hdf5 --triplet=x64-windows &&
+          cd .. && move vcpkg-repo vcpkg
+        
+        CIBW_BEFORE_BUILD_WINDOWS: |
+          pip install cmake ninja pybind11 numpy &&
+          cmake -B {project}/build -S {project} -G"Visual Studio 17 2022" -A x64 ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DLDSCTRLEST_BUILD_PYTHON=ON ^
+            -DCMAKE_TOOLCHAIN_FILE={project}/vcpkg/scripts/buildsystems/vcpkg.cmake &&
+          cmake --build {project}/build --config Release --target python_modules
+
+        # Repair wheels
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair -w {dest_dir} {wheel}
+        CIBW_REPAIR_WHEEL_COMMAND_MACOS: delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
+
+        # Test the wheels
+        CIBW_TEST_REQUIRES: pytest numpy
+        CIBW_TEST_COMMAND: python -c "import ldsctrlest; print('ldsctrlest imported successfully'); print('Version:', ldsctrlest.__version__)"
+
+    - name: Upload wheels as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-${{ matrix.os }}
+        path: wheelhouse/*.whl
+        retention-days: 7
+
+  # upload_all:
+  #   name: Upload wheels to PyPI
+  #   needs: [build_wheels]
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    
+  #   steps:
+  #   - name: Download all artifacts
+  #     uses: actions/download-artifact@v4
+  #     with:
+  #       pattern: wheels-*
+  #       path: dist
+  #       merge-multiple: true
+
+  #   - name: List downloaded files
+  #     run: ls -la dist/
+
+  #   - name: Publish to PyPI
+  #     uses: pypa/gh-action-pypi-publish@release/v1
+  #     with:
+  #       user: __token__
+  #       password: ${{ secrets.PYPI_API_TOKEN }}
+  #       skip-existing: true
