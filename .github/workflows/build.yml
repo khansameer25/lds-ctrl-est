@@ -38,10 +38,9 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: "choco install cmake ninja"
 
           # Build without vcpkg - comprehensive static linking approach
-          CIBW_BEFORE_BUILD: 'pip install pybind11 numpy && sed -i ''s|include(HDF5)|# include(HDF5) # Skipped for Python builds|'' CMakeLists.txt && sed -i ''s|include(Armadillo)|# include(Armadillo) # Skipped for Python builds|'' CMakeLists.txt && sed -i ''s|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma Python3::Python)|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma) # Python3::Python removed for wheel builds|'' cmake/Modules/pybind11.cmake && sed -i ''/set(CMAKE_TOOLCHAIN_FILE.*vcpkg/,+1s/^/# /'' CMakeLists.txt && CC=gcc CXX=g++ cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DLDSCTRLEST_BUILD_PYTHON=ON -DLDSCTRLEST_BUILD_FITTING=OFF -DCMAKE_TOOLCHAIN_FILE="" -DCMAKE_MAKE_PROGRAM=make -DCMAKE_VERBOSE_MAKEFILE=ON && find build -name ''link.txt'' -exec sed -i ''s|$| /usr/lib64/liblapack.a /usr/lib64/libopenblas.a /usr/lib/gcc/x86_64-redhat-linux/8/libgfortran.a /usr/lib/gcc/x86_64-redhat-linux/8/libquadmath.a -static-libgcc -static-libstdc++|'' {} \\; && cmake --build build --target python_modules -- VERBOSE=1'
+          CIBW_BEFORE_BUILD: "pip install pybind11 numpy && sed -i 's|include(HDF5)|# include(HDF5)|' CMakeLists.txt && sed -i 's|include(Armadillo)|# include(Armadillo)|' CMakeLists.txt && sed -i 's|Python3::Python||' cmake/Modules/pybind11.cmake && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DLDSCTRLEST_BUILD_PYTHON=ON -DLDSCTRLEST_BUILD_FITTING=OFF && cmake --build build --target python_modules"
 
-          # Deep debugging - comprehensive analysis of linking and symbols
-          CIBW_TEST_COMMAND: "echo '=== LINK ANALYSIS ===' && ls -la /usr/lib64/lib{openblas,lapack}*.a /usr/lib/gcc/x86_64-redhat-linux/8/lib{gfortran,quadmath}.a 2>/dev/null && find build -name '*.so' && find build -name 'ldsCtrlEst*.so' -exec ldd {} \\; && find build -name 'ldsCtrlEst*.so' -exec nm {} \\; | grep -E 'dorgqr|dgeqrf|dpotrf' | head -10 || echo 'No LAPACK symbols' && python -c 'import ldsctrlest; print(\"SUCCESS!\")' || echo 'FAILED'"
+          CIBW_TEST_COMMAND: 'python -c ''import ldsctrlest; print("SUCCESS!")'''
 
       - uses: actions/upload-artifact@v4
         with:
