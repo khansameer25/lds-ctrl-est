@@ -38,7 +38,7 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: "choco install cmake ninja"
 
           # Build - patch CMakeLists.txt to skip HDF5/Armadillo and build Python modules with static BLAS
-          CIBW_BEFORE_BUILD: "pip install pybind11 numpy && sed -i 's|include(HDF5)|# include(HDF5) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|include(Armadillo)|# include(Armadillo) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma Python3::Python)|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma) # Python3::Python removed for wheel builds|' cmake/Modules/pybind11.cmake && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DLDSCTRLEST_BUILD_PYTHON=ON -DLDSCTRLEST_BUILD_FITTING=OFF -DCMAKE_TOOLCHAIN_FILE= -DBLA_STATIC=ON -DLAPACK_STATIC=ON && cmake --build build --target python_modules"
+          CIBW_BEFORE_BUILD: "pip install pybind11 numpy && sed -i 's|include(HDF5)|# include(HDF5) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|include(Armadillo)|# include(Armadillo) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma Python3::Python)|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma) # Python3::Python removed for wheel builds|' cmake/Modules/pybind11.cmake && export LDFLAGS='-static-libgcc -static-libstdc++ -Wl,-Bstatic -lopenblas -llapack -lgfortran -lquadmath -Wl,-Bdynamic' && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DLDSCTRLEST_BUILD_PYTHON=ON -DLDSCTRLEST_BUILD_FITTING=OFF -DCMAKE_TOOLCHAIN_FILE= && cmake --build build --target python_modules"
 
           # Test
           CIBW_TEST_COMMAND: 'python -c ''import ldsctrlest; print("Success!")'''
