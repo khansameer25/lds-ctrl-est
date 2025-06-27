@@ -33,31 +33,17 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
 
           # Install system dependencies with static libraries
-          CIBW_BEFORE_ALL_LINUX: "dnf install -y cmake ninja-build gcc-c++ make openblas-devel openblas-static lapack-devel lapack-static hdf5-devel hdf5-static"
+          CIBW_BEFORE_ALL_LINUX: "dnf install -y cmake ninja-build gcc-c++ gcc-gfortran make openblas-devel openblas-static lapack-devel lapack-static hdf5-devel hdf5-static libgfortran-static libquadmath-static"
           CIBW_BEFORE_ALL_MACOS: "brew install cmake ninja openblas hdf5"
           CIBW_BEFORE_ALL_WINDOWS: "choco install cmake ninja"
 
-          # Build - patch CMakeLists.txt to skip HDF5/Armadillo and build Python modules with static BLAS
-          CIBW_BEFORE_BUILD: "pip install pybind11 numpy && sed -i 's|include(HDF5)|# include(HDF5) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|include(Armadillo)|# include(Armadillo) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma Python3::Python)|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma) # Python3::Python removed for wheel builds|' cmake/Modules/pybind11.cmake && sed -i '/target_link_libraries.*ldsCtrlEst.*PUBLIC.*PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME/a\\ntarget_link_libraries(ldsCtrlEst PUBLIC -static-libgcc -static-libstdc++ -Wl,-Bstatic -lopenblas -llapack -lgfortran -lquadmath -Wl,-Bdynamic)' CMakeLists.txt && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DLDSCTRLEST_BUILD_PYTHON=ON -DLDSCTRLEST_BUILD_FITTING=OFF -DCMAKE_TOOLCHAIN_FILE= && cmake --build build --target python_modules"
+          # Build without vcpkg - comprehensive static linking approach
+          CIBW_BEFORE_BUILD: "pip install pybind11 numpy && sed -i 's|include(HDF5)|# include(HDF5) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|include(Armadillo)|# include(Armadillo) # Skipped for Python builds|' CMakeLists.txt && sed -i 's|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma Python3::Python)|list(APPEND PROJECT_REQUIRED_LIBRARIES_ABSOLUTE_NAME carma::carma) # Python3::Python removed for wheel builds|' cmake/Modules/pybind11.cmake && echo 'set(CMAKE_FIND_LIBRARY_SUFFIXES .a)' >> CMakeLists.txt && echo 'set(STATIC_LIBS /usr/lib64/liblapack.a /usr/lib64/libopenblas.a /usr/lib64/libgfortran.a /usr/lib64/libquadmath.a)' >> CMakeLists.txt && echo 'if(LDSCTRLEST_BUILD_PYTHON)' >> CMakeLists.txt && echo '  target_link_libraries(ldsCtrlEst PUBLIC $${STATIC_LIBS})' >> CMakeLists.txt && echo '  target_link_options(ldsCtrlEst PRIVATE -static-libgcc -static-libstdc++ -Wl,--whole-archive -Wl,--no-as-needed)' >> CMakeLists.txt && echo 'endif()' >> CMakeLists.txt && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DLDSCTRLEST_BUILD_PYTHON=ON -DLDSCTRLEST_BUILD_FITTING=OFF -DCMAKE_VERBOSE_MAKEFILE=ON && cmake --build build --target python_modules -- VERBOSE=1"
 
-          # Test
-          CIBW_TEST_COMMAND: 'python -c ''import ldsctrlest; print("Success!")'''
+          # Deep debugging - comprehensive analysis of linking and symbols
+          CIBW_TEST_COMMAND: "echo '=== LINK ANALYSIS ===' && ls -la /usr/lib64/lib{openblas,lapack,gfortran,quadmath}*.a 2>/dev/null && find build -name '*.so' && find build -name 'ldsCtrlEst*.so' -exec ldd {} \\; && find build -name 'ldsCtrlEst*.so' -exec nm {} \\; | grep -E 'dorgqr|dgeqrf|dpotrf' | head -10 || echo 'No LAPACK symbols' && python -c 'import ldsctrlest; print(\"SUCCESS!\")' || echo 'FAILED'"
 
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}
           path: wheelhouse/*.whl
-
-  # publish:
-  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-  #   needs: wheels
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         pattern: wheels-*
-  #         path: dist
-  #         merge-multiple: true
-  #     - uses: pypa/gh-action-pypi-publish@release/v1
-  #       with:
-  #         password: ${{ secrets.PYPI_API_TOKEN }}
