@@ -67,4 +67,9 @@ if(HDF5_FOUND)
     message(STATUS "Found HDF5")
 endif()
 
+# Install the main library so it can be found by the Python modules
+install(TARGETS ${CMAKE_PROJECT_NAME}
+    LIBRARY DESTINATION ldsctrlest
+    RUNTIME DESTINATION ldsctrlest)
+
 add_subdirectory(ldsctrlest)

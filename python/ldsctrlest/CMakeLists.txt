@@ -16,6 +16,11 @@ target_link_libraries(base PUBLIC ${CMAKE_PROJECT_NAME})
 target_link_libraries(gaussian PUBLIC ${CMAKE_PROJECT_NAME})
 target_link_libraries(poisson PUBLIC ${CMAKE_PROJECT_NAME})
 
+# Set RPATH so the extension modules can find the main library
+set_target_properties(base gaussian poisson PROPERTIES
+    INSTALL_RPATH "@loader_path"
+    BUILD_WITH_INSTALL_RPATH TRUE)
+
 # Install the Python modules to the correct location
 install(TARGETS base gaussian poisson
     LIBRARY DESTINATION ldsctrlest
