@@ -40,16 +40,19 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.2
         env:
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-          CIBW_BUILD: "cp311-*"  # Build only Python 3.11 for faster iteration
-          CIBW_SKIP: "pp*"  # Skip PyPy builds (incompatible with pybind11)
-          CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-osx
+          CIBW_BUILD: "cp311-*" # Build only Python 3.11 for faster iteration
+          CIBW_SKIP: "pp*" # Skip PyPy builds (incompatible with pybind11)
+          CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-osx LDSCTRLEST_BUILD_PYTHON=ON
           CIBW_BEFORE_BUILD_MACOS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && ls -la ${{ github.workspace }}/vcpkg_installed/x64-osx/
-          CIBW_TEST_COMMAND: python -c "import ldsctrlest; print('✅ Import successful!')"
+          CIBW_TEST_COMMAND: python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
         with:
           package-dir: python
 
       - name: List built wheels
-        run: ls -la wheelhouse/
+        run: |
+          ls -la wheelhouse/
+          echo "Inspecting wheel contents:"
+          unzip -l wheelhouse/*.whl
 
       - uses: actions/upload-artifact@v4
         with:
