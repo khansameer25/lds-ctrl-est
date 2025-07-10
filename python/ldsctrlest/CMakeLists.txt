@@ -15,3 +15,8 @@ target_compile_definitions(poisson PRIVATE VERSION_INFO=${PROJECT_VERSION})
 target_link_libraries(base PUBLIC ${CMAKE_PROJECT_NAME})
 target_link_libraries(gaussian PUBLIC ${CMAKE_PROJECT_NAME})
 target_link_libraries(poisson PUBLIC ${CMAKE_PROJECT_NAME})
+
+# Install the Python modules to the correct location
+install(TARGETS base gaussian poisson
+    LIBRARY DESTINATION ldsctrlest
+    RUNTIME DESTINATION ldsctrlest)
