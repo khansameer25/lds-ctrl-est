@@ -5,7 +5,7 @@
     "armadillo",
     {
       "name": "hdf5",
-      "features": ["core", "zlib"]
+      "features": ["zlib"]
     }
   ]
 }
