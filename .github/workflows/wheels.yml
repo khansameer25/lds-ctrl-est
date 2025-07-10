@@ -20,8 +20,28 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install dependencies with vcpkg
+        run: |
+          # Bootstrap vcpkg if needed
+          if [ ! -f "./vcpkg/vcpkg" ]; then
+            ./vcpkg/bootstrap-vcpkg.sh
+          fi
+          # Install dependencies using the project's vcpkg.json
+          ./vcpkg/vcpkg install --triplet=x64-osx
+
+      - name: Verify vcpkg installation
+        run: |
+          echo "Vcpkg installation directory:"
+          ls -la vcpkg_installed/x64-osx/
+          echo "Toolchain file:"
+          ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.2
+        env:
+          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+          CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-osx
+          CIBW_BEFORE_BUILD_MACOS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && ls -la ${{ github.workspace }}/vcpkg_installed/x64-osx/
         with:
           package-dir: python
 
