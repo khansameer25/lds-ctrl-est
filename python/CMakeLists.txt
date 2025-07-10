@@ -13,6 +13,9 @@ endif()
 # Find pybind11
 find_package(pybind11 REQUIRED)
 
+# Add carma as subdirectory (header-only library)
+add_subdirectory(carma)
+
 # Include directories from main project
 include_directories(${MAIN_PROJECT_DIR}/include)
 
@@ -44,12 +47,10 @@ if(Armadillo_FOUND OR ARMADILLO_FOUND)
     message(STATUS "Found Armadillo")
 endif()
 
-# Find carma for Armadillo-NumPy conversion
-find_package(carma REQUIRED)
-if(carma_FOUND)
-    target_link_libraries(${CMAKE_PROJECT_NAME} carma::carma)
-    message(STATUS "Found carma")
-endif()
+# Find carma for Armadillo-NumPy conversion (already added as subdirectory)
+# carma target should be available from add_subdirectory above
+target_link_libraries(${CMAKE_PROJECT_NAME} carma::carma)
+message(STATUS "Using carma from submodule")
 
 # Find HDF5 using vcpkg-compatible method
 find_package(HDF5 QUIET COMPONENTS C)

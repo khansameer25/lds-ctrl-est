@@ -3,7 +3,6 @@
   "version-string": "0.8.1",
   "dependencies": [
     "armadillo",
-    "carma",
     {
       "name": "hdf5",
       "features": ["zlib"]
