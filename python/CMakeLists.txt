@@ -44,6 +44,13 @@ if(Armadillo_FOUND OR ARMADILLO_FOUND)
     message(STATUS "Found Armadillo")
 endif()
 
+# Find carma for Armadillo-NumPy conversion
+find_package(carma REQUIRED)
+if(carma_FOUND)
+    target_link_libraries(${CMAKE_PROJECT_NAME} carma::carma)
+    message(STATUS "Found carma")
+endif()
+
 # Find HDF5 using vcpkg-compatible method
 find_package(HDF5 QUIET COMPONENTS C)
 if(HDF5_FOUND)
