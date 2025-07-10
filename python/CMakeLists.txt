@@ -10,6 +10,9 @@ if(DEFINED CMAKE_TOOLCHAIN_FILE)
     message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
 endif()
 
+# Find Python3 with NumPy (required for carma)
+find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+
 # Find pybind11
 find_package(pybind11 REQUIRED)
 
