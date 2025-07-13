@@ -177,21 +177,42 @@ if(PTHREAD_LIB)
 endif()
 target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
 
+# Add specific compiler flags for better manylinux compatibility
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
+    # Ensure we use older C standard library functions for manylinux compatibility
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE 
+        _GNU_SOURCE
+    )
+    
+    # Set C standard to ensure compatibility
+    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+        C_STANDARD 11
+        CXX_STANDARD 14
+    )
+    
+    message(STATUS "Applied manylinux compatibility settings")
+endif()
+
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)
 # carma target should be available from add_subdirectory above
 target_link_libraries(${CMAKE_PROJECT_NAME} carma::carma)
 message(STATUS "Using carma from submodule")
 
-# Find HDF5 using vcpkg-compatible method
-find_package(HDF5 QUIET COMPONENTS C)
-if(HDF5_FOUND)
-    if(TARGET hdf5::hdf5)
-        target_link_libraries(${CMAKE_PROJECT_NAME} hdf5::hdf5)
-    else()
-        include_directories(${HDF5_INCLUDE_DIRS})
-        target_link_libraries(${CMAKE_PROJECT_NAME} ${HDF5_LIBRARIES})
+# Find HDF5 using vcpkg-compatible method (temporarily disabled for manylinux compatibility)
+# The __isoc23_strtol symbol from newer glibc is causing issues in manylinux
+if(NOT DEFINED ENV{CIBW_LINUX})
+    find_package(HDF5 QUIET COMPONENTS C)
+    if(HDF5_FOUND)
+        if(TARGET hdf5::hdf5)
+            target_link_libraries(${CMAKE_PROJECT_NAME} hdf5::hdf5)
+        else()
+            include_directories(${HDF5_INCLUDE_DIRS})
+            target_link_libraries(${CMAKE_PROJECT_NAME} ${HDF5_LIBRARIES})
+        endif()
+        message(STATUS "Found HDF5")
     endif()
-    message(STATUS "Found HDF5")
+else()
+    message(STATUS "HDF5 disabled for manylinux compatibility")
 endif()
 
 # Install the main library so it can be found by the Python modules
