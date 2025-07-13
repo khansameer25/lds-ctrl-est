@@ -220,6 +220,18 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         CXX_EXTENSIONS ON
     )
     
+    # Force older symbol versions for manylinux compatibility
+    target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+        # Bind to older GLIBC versions explicitly
+        -Wl,--defsym=__isoc23_strtol=strtol
+        -Wl,--defsym=__isoc23_strtoll=strtoll
+        -Wl,--defsym=__isoc23_strtoul=strtoul
+        -Wl,--defsym=__isoc23_strtoull=strtoull
+        # Force older symbol versions
+        -Wl,--wrap=strtol
+        -Wl,--wrap=strtoll
+    )
+    
     message(STATUS "Applied comprehensive manylinux compatibility settings with glibc 2.17 enforcement")
 endif()
 
@@ -251,3 +263,10 @@ install(TARGETS ${CMAKE_PROJECT_NAME}
     RUNTIME DESTINATION ldsctrlest)
 
 add_subdirectory(ldsctrlest)
+
+# Add symbol compatibility for manylinux
+if(UNIX AND NOT APPLE)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/symbol_compat.c
+    )
+endif()

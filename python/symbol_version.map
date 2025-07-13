@@ -1,0 +1,17 @@
+{
+  # Force use of GLIBC_2.2.5 symbols instead of newer ones
+  global:
+    strtol;
+    strtoll;
+    strtoul;
+    strtoull;
+  local: *;
+};
+
+GLIBC_2.2.5 {
+  global:
+    strtol;
+    strtoll;
+    strtoul;
+    strtoull;
+};
