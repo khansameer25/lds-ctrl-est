@@ -20,13 +20,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies with vcpkg (Linux - not used in container)
+      - name: Install dependencies with vcpkg (Linux)
         if: runner.os == 'Linux'
         run: |
-          echo "Skipping host vcpkg install for Linux - will be done in container"
+          chmod +x vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --triplet=x64-linux
 
       - name: Verify vcpkg installation
-        run: echo "Skipping verification for Linux-only build"
+        run: |
+          ls -la vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
         shell: bash
 
       - name: Build wheels
@@ -35,12 +38,10 @@ jobs:
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
           CIBW_BUILD: "cp311-*" # Build only Python 3.11 for faster iteration
           CIBW_SKIP: "pp*" # Skip PyPy builds (incompatible with pybind11)
-          # Linux: Install vcpkg dependencies inside container
+          # Linux: Use pre-installed vcpkg dependencies from host
           CIBW_BEFORE_ALL_LINUX: |
-            yum install -y python3-devel zip unzip curl tar || echo "Could not install required packages via yum"
-            chmod +x vcpkg/bootstrap-vcpkg.sh
-            ./vcpkg/bootstrap-vcpkg.sh
-            ./vcpkg/vcpkg install --triplet=x64-linux
+            echo "Using vcpkg dependencies installed on host"
+            ls -la /project/vcpkg_installed/x64-linux/ || echo "Host vcpkg directory not found"
           CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library}
           CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
           CIBW_TEST_COMMAND: python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
