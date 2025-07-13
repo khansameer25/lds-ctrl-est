@@ -42,9 +42,14 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: |
             echo "Using vcpkg dependencies installed on host"
             ls -la /project/vcpkg_installed/x64-linux/ || echo "Host vcpkg directory not found"
-          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library}
+          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library} VERBOSE=1
+          CIBW_BUILD_VERBOSITY_LINUX: 1
           CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found" && echo "Looking for gfortran libraries:" && find /usr -name "*gfortran*" 2>/dev/null || echo "gfortran not found" && find /opt -name "*gfortran*" 2>/dev/null || echo "gfortran not found in /opt"
-          CIBW_TEST_COMMAND: python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
+          CIBW_TEST_COMMAND: |
+            echo "Checking linked libraries in wheel:"
+            python -c "import ldsctrlest; lib_path = ldsctrlest.__file__.replace('__init__.py', 'libldsctrlest.so.0'); print('Library path:', lib_path)"
+            python -c "import ldsctrlest; lib_path = ldsctrlest.__file__.replace('__init__.py', 'libldsctrlest.so.0'); import subprocess; result = subprocess.run(['ldd', lib_path], capture_output=True, text=True); print('ldd output:'); print(result.stdout); print('Looking for gfortran/lapack in ldd:'); [print(line) for line in result.stdout.split('\n') if any(x in line.lower() for x in ['gfortran', 'lapack', 'blas'])]"
+            python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
         with:
           package-dir: python
 
