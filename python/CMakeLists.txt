@@ -193,6 +193,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         _POSIX_C_SOURCE=200809L
         _XOPEN_SOURCE=700
         __GLIBC_USE_DEPRECATED_GETS=1
+        # Prevent ISO C23 functions by forcing C11 standard
+        __STDC_VERSION__=201112L
+        _ISOC11_SOURCE=1
     )
     
     # Force older symbol versions and disable newer glibc features
@@ -201,6 +204,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         -U_FORTIFY_SOURCE
         -D_FORTIFY_SOURCE=0
         -fno-stack-protector
+        # Force C11 standard to avoid C23 symbols
+        -D__STDC_VERSION__=201112L
+        # Explicitly disable newer standards
+        -U__STDC_VERSION__
+        -D__STDC_VERSION__=201112L
+        # Force C++14 standard to avoid newer symbols
+        -std=gnu++14
+    )
+    
+    # Set C++ standard to older version for manylinux compatibility
+    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+        CXX_STANDARD 14
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS ON
     )
     
     message(STATUS "Applied comprehensive manylinux compatibility settings with glibc 2.17 enforcement")
