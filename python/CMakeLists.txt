@@ -71,17 +71,40 @@ find_package(Armadillo REQUIRED)
 if(Armadillo_FOUND OR ARMADILLO_FOUND)
     if(TARGET armadillo)
         target_link_libraries(${CMAKE_PROJECT_NAME} armadillo)
+        message(STATUS "Found Armadillo target")
     else()
         include_directories(${ARMADILLO_INCLUDE_DIRS})
         target_link_libraries(${CMAKE_PROJECT_NAME} ${ARMADILLO_LIBRARIES})
+        message(STATUS "Found Armadillo libraries: ${ARMADILLO_LIBRARIES}")
     endif()
     message(STATUS "Found Armadillo")
 endif()
 
-# Explicitly find and link LAPACK and BLAS (required by Armadillo)
-find_package(LAPACK REQUIRED)
-find_package(BLAS REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+# Try to find OpenBLAS directly since vcpkg installs it
+find_package(OpenBLAS QUIET)
+if(OpenBLAS_FOUND)
+    target_link_libraries(${CMAKE_PROJECT_NAME} ${OpenBLAS_LIBRARIES})
+    message(STATUS "Found OpenBLAS: ${OpenBLAS_LIBRARIES}")
+else()
+    # Fall back to finding libraries manually in vcpkg installation
+    find_library(OPENBLAS_LIB 
+        NAMES openblas libopenblas
+        PATHS ${CMAKE_PREFIX_PATH}/lib
+        NO_DEFAULT_PATH)
+    find_library(LAPACK_LIB 
+        NAMES lapack liblapack
+        PATHS ${CMAKE_PREFIX_PATH}/lib
+        NO_DEFAULT_PATH)
+    
+    if(OPENBLAS_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENBLAS_LIB})
+        message(STATUS "Found OpenBLAS library: ${OPENBLAS_LIB}")
+    endif()
+    if(LAPACK_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${LAPACK_LIB})
+        message(STATUS "Found LAPACK library: ${LAPACK_LIB}")
+    endif()
+endif()
 
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)
 # carma target should be available from add_subdirectory above
