@@ -209,8 +209,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         # Explicitly disable newer standards
         -U__STDC_VERSION__
         -D__STDC_VERSION__=201112L
-        # Force C++14 standard to avoid newer symbols
-        -std=gnu++14
+    )
+    
+    # Apply C++ specific flags only to C++ files
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
     )
     
     # Set C++ standard to older version for manylinux compatibility
@@ -222,11 +225,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
     
     # Force older symbol versions for manylinux compatibility
     target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
-        # Bind to older GLIBC versions explicitly
-        -Wl,--defsym=__isoc23_strtol=strtol
-        -Wl,--defsym=__isoc23_strtoll=strtoll
-        -Wl,--defsym=__isoc23_strtoul=strtoul
-        -Wl,--defsym=__isoc23_strtoull=strtoull
         # Force older symbol versions
         -Wl,--wrap=strtol
         -Wl,--wrap=strtoll

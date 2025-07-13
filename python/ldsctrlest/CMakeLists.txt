@@ -54,6 +54,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         -D__STDC_VERSION__=201112L
     )
     
+    # Apply C++ specific flags only to C++ files
+    target_compile_options(base PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
+    )
+    
     target_compile_definitions(gaussian PRIVATE
         _GNU_SOURCE=1
         __USE_GNU=1
@@ -77,6 +82,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         -D__STDC_VERSION__=201112L
     )
     
+    # Apply C++ specific flags only to C++ files
+    target_compile_options(gaussian PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
+    )
+    
     target_compile_definitions(poisson PRIVATE
         _GNU_SOURCE=1
         __USE_GNU=1
@@ -98,6 +108,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         # Explicitly disable newer standards
         -U__STDC_VERSION__
         -D__STDC_VERSION__=201112L
+    )
+    
+    # Apply C++ specific flags only to C++ files
+    target_compile_options(poisson PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
     )
     
     message(STATUS "Applied glibc 2.17 compatibility settings to Python extension modules")
