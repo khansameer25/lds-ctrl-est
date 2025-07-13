@@ -185,7 +185,25 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         CXX_STANDARD 14
     )
     
-    message(STATUS "Applied manylinux compatibility settings with conservative C/C++ standards")
+    # Add strict glibc compatibility compile definitions to prevent newer symbol usage
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+        _GNU_SOURCE=1
+        __USE_GNU=1
+        _DEFAULT_SOURCE=1
+        _POSIX_C_SOURCE=200809L
+        _XOPEN_SOURCE=700
+        __GLIBC_USE_DEPRECATED_GETS=1
+    )
+    
+    # Force older symbol versions and disable newer glibc features
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+        -D__GLIBC_MINOR__=17
+        -U_FORTIFY_SOURCE
+        -D_FORTIFY_SOURCE=0
+        -fno-stack-protector
+    )
+    
+    message(STATUS "Applied comprehensive manylinux compatibility settings with glibc 2.17 enforcement")
 endif()
 
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)

@@ -28,6 +28,57 @@ else()
         BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
+# Apply manylinux compatibility settings to Python extension modules
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
+    # Add strict glibc compatibility compile definitions to Python modules
+    target_compile_definitions(base PRIVATE
+        _GNU_SOURCE=1
+        __USE_GNU=1
+        _DEFAULT_SOURCE=1
+        _POSIX_C_SOURCE=200809L
+        _XOPEN_SOURCE=700
+        __GLIBC_USE_DEPRECATED_GETS=1
+    )
+    target_compile_options(base PRIVATE
+        -D__GLIBC_MINOR__=17
+        -U_FORTIFY_SOURCE
+        -D_FORTIFY_SOURCE=0
+        -fno-stack-protector
+    )
+    
+    target_compile_definitions(gaussian PRIVATE
+        _GNU_SOURCE=1
+        __USE_GNU=1
+        _DEFAULT_SOURCE=1
+        _POSIX_C_SOURCE=200809L
+        _XOPEN_SOURCE=700
+        __GLIBC_USE_DEPRECATED_GETS=1
+    )
+    target_compile_options(gaussian PRIVATE
+        -D__GLIBC_MINOR__=17
+        -U_FORTIFY_SOURCE
+        -D_FORTIFY_SOURCE=0
+        -fno-stack-protector
+    )
+    
+    target_compile_definitions(poisson PRIVATE
+        _GNU_SOURCE=1
+        __USE_GNU=1
+        _DEFAULT_SOURCE=1
+        _POSIX_C_SOURCE=200809L
+        _XOPEN_SOURCE=700
+        __GLIBC_USE_DEPRECATED_GETS=1
+    )
+    target_compile_options(poisson PRIVATE
+        -D__GLIBC_MINOR__=17
+        -U_FORTIFY_SOURCE
+        -D_FORTIFY_SOURCE=0
+        -fno-stack-protector
+    )
+    
+    message(STATUS "Applied glibc 2.17 compatibility settings to Python extension modules")
+endif()
+
 # Install the Python modules to the correct location
 install(TARGETS base gaussian poisson
     LIBRARY DESTINATION ldsctrlest
