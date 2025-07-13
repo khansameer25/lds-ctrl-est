@@ -52,8 +52,13 @@ file(GLOB_RECURSE LIB_SOURCES
 # Create the main library
 add_library(${CMAKE_PROJECT_NAME} SHARED ${LIB_SOURCES})
 
-# Set C++17 standard (required for pybind11 compatibility)
-target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
+# Set C++ standard conditionally - C++17 for Linux manylinux, C++14 for macOS
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
+    set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+else()
+    set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 14)
+endif()
+set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # Set shared library properties for better auditwheel compatibility
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
@@ -246,9 +251,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
 # Minimal manylinux compatibility settings
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
     message(STATUS "Configuring for manylinux compatibility with GCC 10 fixes")
-    
-    # Set C++17 standard
-    target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
     
     # Add compiler flags to work around GCC 10 + pybind11 static_assert issues
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
