@@ -67,7 +67,7 @@ jobs:
           CIBW_SKIP: "pp*"  # Skip PyPy builds (incompatible with pybind11)
           # Linux: Install vcpkg dependencies inside container
           CIBW_BEFORE_ALL_LINUX: |
-            yum install -y curl zip unzip tar git
+            yum install -y python3-devel
             chmod +x vcpkg/bootstrap-vcpkg.sh
             ./vcpkg/bootstrap-vcpkg.sh
             ./vcpkg/vcpkg install --triplet=x64-linux
