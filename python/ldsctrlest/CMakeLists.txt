@@ -31,12 +31,20 @@ endif()
 
 # Minimal manylinux compatibility for Python extension modules
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
-    message(STATUS "Applying minimal manylinux settings to Python extension modules")
+    message(STATUS "Applying manylinux settings to Python extension modules with GCC 10 fixes")
     
-    # Just ensure C++17 standard
+    # Ensure C++17 standard and add GCC 10 compatibility flags
     target_compile_features(base PUBLIC cxx_std_17)
     target_compile_features(gaussian PUBLIC cxx_std_17)
     target_compile_features(poisson PUBLIC cxx_std_17)
+    
+    # Add compiler flags to work around GCC 10 + pybind11 issues
+    foreach(target base gaussian poisson)
+        target_compile_options(${target} PRIVATE
+            -Wno-deprecated-declarations
+            -DPYBIND11_DETAILED_ERROR_MESSAGES
+        )
+    endforeach()
 endif()
 
 # Install the Python modules to the correct location

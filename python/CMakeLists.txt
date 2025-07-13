@@ -245,12 +245,18 @@ target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
 
 # Minimal manylinux compatibility settings
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
-    message(STATUS "Configuring for manylinux compatibility with minimal settings")
+    message(STATUS "Configuring for manylinux compatibility with GCC 10 fixes")
     
-    # Only set essential standards without conflicting macros
+    # Set C++17 standard
     target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
     
-    message(STATUS "Applied minimal manylinux compatibility settings")
+    # Add compiler flags to work around GCC 10 + pybind11 static_assert issues
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+        -Wno-deprecated-declarations
+        -DPYBIND11_DETAILED_ERROR_MESSAGES
+    )
+    
+    message(STATUS "Applied manylinux compatibility settings with GCC 10 fixes")
 endif()
 
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)
