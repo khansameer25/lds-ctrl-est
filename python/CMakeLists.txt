@@ -262,9 +262,3 @@ install(TARGETS ${CMAKE_PROJECT_NAME}
 
 add_subdirectory(ldsctrlest)
 
-# Add symbol compatibility for manylinux
-if(UNIX AND NOT APPLE)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/symbol_compat.c
-    )
-endif()
