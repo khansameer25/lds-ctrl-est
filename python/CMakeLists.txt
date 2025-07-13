@@ -82,13 +82,26 @@ endif()
 
 # Link against the specific libraries that vcpkg installs
 # Based on the vcpkg output, we know it installs: openblas, lapack-reference
+# Try multiple paths to find vcpkg-installed libraries
+
+# Debug: Show what CMAKE_PREFIX_PATH contains
+message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+message(STATUS "vcpkg_INSTALLED_DIR: ${vcpkg_INSTALLED_DIR}")
+message(STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
+
 find_library(OPENBLAS_LIB 
     NAMES openblas libopenblas
-    PATHS ${CMAKE_PREFIX_PATH}/lib
+    PATHS 
+        ${CMAKE_PREFIX_PATH}/lib
+        ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
+        /project/vcpkg_installed/x64-linux/lib
     NO_DEFAULT_PATH)
 find_library(LAPACK_REF_LIB 
     NAMES lapack liblapack
-    PATHS ${CMAKE_PREFIX_PATH}/lib
+    PATHS 
+        ${CMAKE_PREFIX_PATH}/lib
+        ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
+        /project/vcpkg_installed/x64-linux/lib
     NO_DEFAULT_PATH)
 
 # Search for gfortran in multiple possible locations, prioritizing system paths
