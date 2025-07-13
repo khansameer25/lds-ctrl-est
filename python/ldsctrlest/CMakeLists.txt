@@ -3,8 +3,8 @@ pybind11_add_module(gaussian MODULE gaussian.cpp)
 pybind11_add_module(poisson MODULE poisson.cpp)
 add_custom_target(python_modules DEPENDS base gaussian poisson)
 
-# need C++14 for CARMA
-set_property(TARGET base gaussian poisson PROPERTY CXX_STANDARD 14)
+# need C++17 for pybind11 compatibility
+set_property(TARGET base gaussian poisson PROPERTY CXX_STANDARD 17)
 set_property(TARGET base gaussian poisson PROPERTY CXX_STANDARD_REQUIRED ON)
 
 target_compile_definitions(base PRIVATE VERSION_INFO=${PROJECT_VERSION})
@@ -41,15 +41,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         target_compile_options(${target} PRIVATE
             -D__GLIBC_MINOR__=17
             # Keep default protections for stability
-            -std=gnu++14
+            -std=gnu++17
         )
     endforeach()
     
     message(STATUS "Applied simplified glibc 2.17 compatibility settings to Python extension modules")
     
-    # Force C++14 standard for all Python modules to avoid newer symbols
+    # Force C++17 standard for all Python modules for pybind11 compatibility
     set_target_properties(base gaussian poisson PROPERTIES
-        CXX_STANDARD 14
+        CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS ON
     )

@@ -52,8 +52,8 @@ file(GLOB_RECURSE LIB_SOURCES
 # Create the main library
 add_library(${CMAKE_PROJECT_NAME} SHARED ${LIB_SOURCES})
 
-# Set C++14 standard (required for the project)
-set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 14)
+# Set C++17 standard (required for pybind11 compatibility)
+set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # Set shared library properties for better auditwheel compatibility
@@ -249,7 +249,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
     # Set conservative standards for manylinux compatibility
     set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
         C_STANDARD 99
-        CXX_STANDARD 14
+        CXX_STANDARD 17
     )
     
     # Add glibc compatibility compile definitions (reduced set for stability)
@@ -267,9 +267,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         # Note: Keeping default stack protection for stability
     )
     
-    # Set C++ standard to older version for manylinux compatibility
+    # Set C++ standard to C++17 for pybind11 compatibility
     set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-        CXX_STANDARD 14
+        CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS ON
     )
