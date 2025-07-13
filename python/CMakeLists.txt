@@ -252,35 +252,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         CXX_STANDARD 14
     )
     
-    # Add strict glibc compatibility compile definitions to prevent newer symbol usage
+    # Add glibc compatibility compile definitions (reduced set for stability)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
         _GNU_SOURCE=1
-        __USE_GNU=1
         _DEFAULT_SOURCE=1
         _POSIX_C_SOURCE=200809L
-        _XOPEN_SOURCE=700
-        __GLIBC_USE_DEPRECATED_GETS=1
-        # Prevent ISO C23 functions by forcing C11 standard
+        # Force C11 standard to avoid C23 symbols
         __STDC_VERSION__=201112L
-        _ISOC11_SOURCE=1
     )
     
-    # Force older symbol versions and disable newer glibc features
+    # Conservative compiler options for manylinux compatibility
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
         -D__GLIBC_MINOR__=17
-        -U_FORTIFY_SOURCE
-        -D_FORTIFY_SOURCE=0
-        -fno-stack-protector
-        # Force C11 standard to avoid C23 symbols
-        -D__STDC_VERSION__=201112L
-        # Explicitly disable newer standards
-        -U__STDC_VERSION__
-        -D__STDC_VERSION__=201112L
-    )
-    
-    # Apply C++ specific flags only to C++ files
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
+        # Note: Keeping default stack protection for stability
     )
     
     # Set C++ standard to older version for manylinux compatibility
@@ -290,14 +274,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         CXX_EXTENSIONS ON
     )
     
-    # Force older symbol versions for manylinux compatibility
-    target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
-        # Force older symbol versions
-        -Wl,--wrap=strtol
-        -Wl,--wrap=strtoll
-    )
-    
-    message(STATUS "Applied comprehensive manylinux compatibility settings with glibc 2.17 enforcement")
+    message(STATUS "Applied simplified manylinux compatibility settings with glibc 2.17 enforcement")
 endif()
 
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)

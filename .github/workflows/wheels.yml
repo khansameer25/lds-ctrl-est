@@ -77,12 +77,12 @@ jobs:
             echo "=== Testing wheel import ==="
             echo "Python version:"
             python --version
-            echo "Checking glibc symbols in Python environment:"
-            python -c "import os; print('GLIBC_2.17' in str(os.system('ldd --version')))"
-            echo "Attempting import:"
-            python -c "import ldsctrlest; print('Import successful!')" || echo "Import failed - checking symbols"
-            python -c "import ldsctrlest; lib_path = ldsctrlest.__file__.replace('__init__.py', 'libldsctrlest.so.0'); import subprocess; result = subprocess.run(['ldd', lib_path], capture_output=True, text=True); print('ldd output:'); print(result.stdout)" || echo "Could not run ldd analysis"
-            python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
+            echo "Testing basic import:"
+            python -c "import ldsctrlest; print('✅ Basic import successful!')"
+            echo "Testing module access:"
+            python -c "import ldsctrlest; print('Available modules:', dir(ldsctrlest)); print('✅ Module access successful!')"
+            echo "Testing numpy integration:"
+            python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
 

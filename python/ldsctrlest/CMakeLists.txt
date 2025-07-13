@@ -30,92 +30,20 @@ endif()
 
 # Apply manylinux compatibility settings to Python extension modules
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
-    # Add strict glibc compatibility compile definitions to Python modules
-    target_compile_definitions(base PRIVATE
+    # Add essential glibc compatibility compile definitions to Python modules
+    target_compile_definitions(base gaussian poisson PRIVATE
         _GNU_SOURCE=1
-        __USE_GNU=1
         _DEFAULT_SOURCE=1
-        _POSIX_C_SOURCE=200809L
-        _XOPEN_SOURCE=700
-        __GLIBC_USE_DEPRECATED_GETS=1
-        # Prevent ISO C23 functions by forcing C11 standard
-        __STDC_VERSION__=201112L
-        _ISOC11_SOURCE=1
-    )
-    target_compile_options(base PRIVATE
-        -D__GLIBC_MINOR__=17
-        -U_FORTIFY_SOURCE
-        -D_FORTIFY_SOURCE=0
-        -fno-stack-protector
         # Force C11 standard to avoid C23 symbols
-        -D__STDC_VERSION__=201112L
-        # Explicitly disable newer standards
-        -U__STDC_VERSION__
-        -D__STDC_VERSION__=201112L
-    )
-    
-    # Apply C++ specific flags only to C++ files
-    target_compile_options(base PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
-    )
-    
-    target_compile_definitions(gaussian PRIVATE
-        _GNU_SOURCE=1
-        __USE_GNU=1
-        _DEFAULT_SOURCE=1
-        _POSIX_C_SOURCE=200809L
-        _XOPEN_SOURCE=700
-        __GLIBC_USE_DEPRECATED_GETS=1
-        # Prevent ISO C23 functions by forcing C11 standard
         __STDC_VERSION__=201112L
-        _ISOC11_SOURCE=1
     )
-    target_compile_options(gaussian PRIVATE
+    target_compile_options(base gaussian poisson PRIVATE
         -D__GLIBC_MINOR__=17
-        -U_FORTIFY_SOURCE
-        -D_FORTIFY_SOURCE=0
-        -fno-stack-protector
-        # Force C11 standard to avoid C23 symbols
-        -D__STDC_VERSION__=201112L
-        # Explicitly disable newer standards
-        -U__STDC_VERSION__
-        -D__STDC_VERSION__=201112L
+        # Keep default protections for stability
+        -std=gnu++14
     )
     
-    # Apply C++ specific flags only to C++ files
-    target_compile_options(gaussian PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
-    )
-    
-    target_compile_definitions(poisson PRIVATE
-        _GNU_SOURCE=1
-        __USE_GNU=1
-        _DEFAULT_SOURCE=1
-        _POSIX_C_SOURCE=200809L
-        _XOPEN_SOURCE=700
-        __GLIBC_USE_DEPRECATED_GETS=1
-        # Prevent ISO C23 functions by forcing C11 standard
-        __STDC_VERSION__=201112L
-        _ISOC11_SOURCE=1
-    )
-    target_compile_options(poisson PRIVATE
-        -D__GLIBC_MINOR__=17
-        -U_FORTIFY_SOURCE
-        -D_FORTIFY_SOURCE=0
-        -fno-stack-protector
-        # Force C11 standard to avoid C23 symbols
-        -D__STDC_VERSION__=201112L
-        # Explicitly disable newer standards
-        -U__STDC_VERSION__
-        -D__STDC_VERSION__=201112L
-    )
-    
-    # Apply C++ specific flags only to C++ files
-    target_compile_options(poisson PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++14>
-    )
-    
-    message(STATUS "Applied glibc 2.17 compatibility settings to Python extension modules")
+    message(STATUS "Applied simplified glibc 2.17 compatibility settings to Python extension modules")
     
     # Force C++14 standard for all Python modules to avoid newer symbols
     set_target_properties(base gaussian poisson PROPERTIES
@@ -123,11 +51,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS ON
     )
-    
-    # Add C++ standard enforcement to all modules
-    target_compile_options(base PRIVATE -std=gnu++14)
-    target_compile_options(gaussian PRIVATE -std=gnu++14)
-    target_compile_options(poisson PRIVATE -std=gnu++14)
 endif()
 
 # Install the Python modules to the correct location
