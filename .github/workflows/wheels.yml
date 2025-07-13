@@ -13,50 +13,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest] # Focus on Linux only for debugging
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install dependencies with vcpkg (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          if (!(Test-Path "./vcpkg/vcpkg.exe")) {
-            ./vcpkg/bootstrap-vcpkg.bat
-          }
-          ./vcpkg/vcpkg install --triplet=x64-windows
-        shell: pwsh
-
-      - name: Install dependencies with vcpkg (Linux)
+      - name: Install dependencies with vcpkg (Linux - not used in container)
         if: runner.os == 'Linux'
         run: |
-          if [ ! -f "./vcpkg/vcpkg" ]; then
-            ./vcpkg/bootstrap-vcpkg.sh
-          fi
-          ./vcpkg/vcpkg install --triplet=x64-linux
-
-      - name: Install dependencies with vcpkg (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          if [ ! -f "./vcpkg/vcpkg" ]; then
-            ./vcpkg/bootstrap-vcpkg.sh
-          fi
-          ./vcpkg/vcpkg install --triplet=x64-osx
+          echo "Skipping host vcpkg install for Linux - will be done in container"
 
       - name: Verify vcpkg installation
-        run: |
-          echo "Vcpkg installation directory:"
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            ls -la vcpkg_installed/x64-windows/ || echo "Windows vcpkg directory not found"
-          elif [[ "${{ runner.os }}" == "Linux" ]]; then
-            ls -la vcpkg_installed/x64-linux/ || echo "Linux vcpkg directory not found"
-          else
-            ls -la vcpkg_installed/x64-osx/ || echo "macOS vcpkg directory not found"
-          fi
-          echo "Toolchain file:"
-          ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
+        run: echo "Skipping verification for Linux-only build"
         shell: bash
 
       - name: Build wheels
@@ -73,31 +43,17 @@ jobs:
             ./vcpkg/vcpkg install --triplet=x64-linux
           CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library}
           CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
-          # macOS and Windows: Use host-installed dependencies
-          CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-osx LDSCTRLEST_BUILD_PYTHON=ON
-          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-windows LDSCTRLEST_BUILD_PYTHON=ON
-          CIBW_BEFORE_BUILD_MACOS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ github.workspace }}/vcpkg_installed/x64-osx/
-          CIBW_BEFORE_BUILD_WINDOWS: echo "CMAKE_TOOLCHAIN_FILE=%CMAKE_TOOLCHAIN_FILE%" && echo "CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%" && echo "LDSCTRLEST_BUILD_PYTHON=%LDSCTRLEST_BUILD_PYTHON%" && dir ${{ github.workspace }}/vcpkg_installed/x64-windows/
           CIBW_TEST_COMMAND: python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
         with:
           package-dir: python
 
       - name: List built wheels
         run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            dir wheelhouse\
-            echo "Inspecting wheel contents:"
-            for wheel in wheelhouse/*.whl; do
-              echo "Contents of $wheel:"
-              python -m zipfile -l "$wheel"
-            done
-          else
-            ls -la wheelhouse/
-            echo "Inspecting wheel contents:"
-            unzip -l wheelhouse/*.whl
-            echo "Looking for shared libraries:"
-            unzip -Z wheelhouse/*.whl | grep -E '\.(so|dylib|dll)' || echo "No shared library files found"
-          fi
+          ls -la wheelhouse/
+          echo "Inspecting wheel contents:"
+          unzip -l wheelhouse/*.whl
+          echo "Looking for shared libraries:"
+          unzip -Z wheelhouse/*.whl | grep -E '\.(so|dylib|dll)' || echo "No shared library files found"
         shell: bash
 
       - uses: actions/upload-artifact@v4

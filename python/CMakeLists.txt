@@ -80,31 +80,40 @@ if(Armadillo_FOUND OR ARMADILLO_FOUND)
     message(STATUS "Found Armadillo")
 endif()
 
-# Try to find OpenBLAS directly since vcpkg installs it
-find_package(OpenBLAS QUIET)
-if(OpenBLAS_FOUND)
-    target_link_libraries(${CMAKE_PROJECT_NAME} ${OpenBLAS_LIBRARIES})
-    message(STATUS "Found OpenBLAS: ${OpenBLAS_LIBRARIES}")
-else()
-    # Fall back to finding libraries manually in vcpkg installation
-    find_library(OPENBLAS_LIB 
-        NAMES openblas libopenblas
-        PATHS ${CMAKE_PREFIX_PATH}/lib
-        NO_DEFAULT_PATH)
-    find_library(LAPACK_LIB 
-        NAMES lapack liblapack
-        PATHS ${CMAKE_PREFIX_PATH}/lib
-        NO_DEFAULT_PATH)
-    
-    if(OPENBLAS_LIB)
-        target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENBLAS_LIB})
-        message(STATUS "Found OpenBLAS library: ${OPENBLAS_LIB}")
-    endif()
-    if(LAPACK_LIB)
-        target_link_libraries(${CMAKE_PROJECT_NAME} ${LAPACK_LIB})
-        message(STATUS "Found LAPACK library: ${LAPACK_LIB}")
-    endif()
+# Link against the specific libraries that vcpkg installs
+# Based on the vcpkg output, we know it installs: openblas, lapack-reference
+find_library(OPENBLAS_LIB 
+    NAMES openblas libopenblas
+    PATHS ${CMAKE_PREFIX_PATH}/lib
+    NO_DEFAULT_PATH)
+find_library(LAPACK_REF_LIB 
+    NAMES lapack liblapack
+    PATHS ${CMAKE_PREFIX_PATH}/lib
+    NO_DEFAULT_PATH)
+find_library(GFORTRAN_LIB 
+    NAMES gfortran libgfortran
+    PATHS /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10 /usr/lib/gcc/x86_64-linux-gnu/10 /usr/lib64
+    NO_DEFAULT_PATH)
+
+if(OPENBLAS_LIB)
+    target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENBLAS_LIB})
+    message(STATUS "Found OpenBLAS library: ${OPENBLAS_LIB}")
 endif()
+if(LAPACK_REF_LIB)
+    target_link_libraries(${CMAKE_PROJECT_NAME} ${LAPACK_REF_LIB})
+    message(STATUS "Found LAPACK reference library: ${LAPACK_REF_LIB}")
+endif()
+if(GFORTRAN_LIB)
+    target_link_libraries(${CMAKE_PROJECT_NAME} ${GFORTRAN_LIB})
+    message(STATUS "Found gfortran library: ${GFORTRAN_LIB}")
+endif()
+
+# Also link pthread and math libraries which are often needed
+find_library(PTHREAD_LIB pthread)
+if(PTHREAD_LIB)
+    target_link_libraries(${CMAKE_PROJECT_NAME} ${PTHREAD_LIB})
+endif()
+target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
 
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)
 # carma target should be available from add_subdirectory above
