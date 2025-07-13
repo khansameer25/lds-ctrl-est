@@ -30,18 +30,20 @@ endif()
 
 # Apply manylinux compatibility settings to Python extension modules
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
-    # Add essential glibc compatibility compile definitions to Python modules
-    target_compile_definitions(base gaussian poisson PRIVATE
-        _GNU_SOURCE=1
-        _DEFAULT_SOURCE=1
-        # Force C11 standard to avoid C23 symbols
-        __STDC_VERSION__=201112L
-    )
-    target_compile_options(base gaussian poisson PRIVATE
-        -D__GLIBC_MINOR__=17
-        # Keep default protections for stability
-        -std=gnu++14
-    )
+    # Add essential glibc compatibility compile definitions to each Python module
+    foreach(target base gaussian poisson)
+        target_compile_definitions(${target} PRIVATE
+            _GNU_SOURCE=1
+            _DEFAULT_SOURCE=1
+            # Force C11 standard to avoid C23 symbols
+            __STDC_VERSION__=201112L
+        )
+        target_compile_options(${target} PRIVATE
+            -D__GLIBC_MINOR__=17
+            # Keep default protections for stability
+            -std=gnu++14
+        )
+    endforeach()
     
     message(STATUS "Applied simplified glibc 2.17 compatibility settings to Python extension modules")
     
