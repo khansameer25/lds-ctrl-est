@@ -11,7 +11,28 @@ if(DEFINED CMAKE_TOOLCHAIN_FILE)
 endif()
 
 # Find Python3 with NumPy (required for carma)
-find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+# Handle manylinux container case differently
+if(DEFINED ENV{CIBW_LINUX})
+    message(STATUS "Detected manylinux build environment")
+    # In manylinux containers, set Python variables manually from environment
+    if(DEFINED ENV{Python3_EXECUTABLE})
+        set(Python3_EXECUTABLE $ENV{Python3_EXECUTABLE} CACHE FILEPATH "Python executable")
+        message(STATUS "Using Python executable: ${Python3_EXECUTABLE}")
+    endif()
+    if(DEFINED ENV{Python3_INCLUDE_DIR})
+        set(Python3_INCLUDE_DIRS $ENV{Python3_INCLUDE_DIR} CACHE PATH "Python include directory")
+        message(STATUS "Using Python include dir: ${Python3_INCLUDE_DIRS}")
+    endif()
+    if(DEFINED ENV{Python3_LIBRARY})
+        set(Python3_LIBRARIES $ENV{Python3_LIBRARY} CACHE FILEPATH "Python library")
+        message(STATUS "Using Python library: ${Python3_LIBRARIES}")
+    endif()
+    # Find NumPy separately
+    find_package(Python3 COMPONENTS Interpreter NumPy REQUIRED)
+else()
+    # Normal case: find full development components
+    find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+endif()
 
 # Find pybind11
 find_package(pybind11 REQUIRED)
