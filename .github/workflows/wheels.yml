@@ -46,9 +46,17 @@ jobs:
             ls -la /project/vcpkg_installed/x64-linux/ || echo "Host vcpkg directory not found"
             echo "Checking available devtoolsets:"
             ls -la /opt/rh/
-            echo "=== Setting up devtoolset-9 for better manylinux2014 compatibility ==="
-            # Use devtoolset-9 instead of newer versions for better glibc compatibility
-            source /opt/rh/devtoolset-9/enable || echo "devtoolset-9 not available, will use default"
+            echo "=== Setting up available devtoolset ==="
+            # Try devtoolset-9 first, fall back to devtoolset-10 
+            if [ -f /opt/rh/devtoolset-9/enable ]; then
+              echo "Using devtoolset-9"
+              source /opt/rh/devtoolset-9/enable
+            elif [ -f /opt/rh/devtoolset-10/enable ]; then
+              echo "Using devtoolset-10"
+              source /opt/rh/devtoolset-10/enable
+            else
+              echo "No devtoolset found, using system compiler"
+            fi
             echo "GCC version after devtoolset setup:"
             gcc --version
             echo "GLIBC version check:"
