@@ -20,29 +20,30 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies with vcpkg
+      - name: Install dependencies with vcpkg (Windows)
+        if: runner.os == 'Windows'
         run: |
-          # Bootstrap vcpkg if needed
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            if [ ! -f "./vcpkg/vcpkg.exe" ]; then
-              ./vcpkg/bootstrap-vcpkg.bat
-            fi
-            # Install dependencies for Windows
-            ./vcpkg/vcpkg install --triplet=x64-windows
-          elif [[ "${{ runner.os }}" == "Linux" ]]; then
-            if [ ! -f "./vcpkg/vcpkg" ]; then
-              ./vcpkg/bootstrap-vcpkg.sh
-            fi
-            # Install dependencies for Linux
-            ./vcpkg/vcpkg install --triplet=x64-linux
-          else
-            # macOS
-            if [ ! -f "./vcpkg/vcpkg" ]; then
-              ./vcpkg/bootstrap-vcpkg.sh
-            fi
-            # Install dependencies for macOS
-            ./vcpkg/vcpkg install --triplet=x64-osx
+          if (!(Test-Path "./vcpkg/vcpkg.exe")) {
+            ./vcpkg/bootstrap-vcpkg.bat
+          }
+          ./vcpkg/vcpkg install --triplet=x64-windows
+        shell: pwsh
+
+      - name: Install dependencies with vcpkg (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          if [ ! -f "./vcpkg/vcpkg" ]; then
+            ./vcpkg/bootstrap-vcpkg.sh
           fi
+          ./vcpkg/vcpkg install --triplet=x64-linux
+
+      - name: Install dependencies with vcpkg (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          if [ ! -f "./vcpkg/vcpkg" ]; then
+            ./vcpkg/bootstrap-vcpkg.sh
+          fi
+          ./vcpkg/vcpkg install --triplet=x64-osx
 
       - name: Verify vcpkg installation
         run: |
@@ -56,6 +57,7 @@ jobs:
           fi
           echo "Toolchain file:"
           ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
+        shell: bash
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.2
@@ -75,18 +77,21 @@ jobs:
 
       - name: List built wheels
         run: |
-          ls -la wheelhouse/ || dir wheelhouse\
-          echo "Inspecting wheel contents:"
           if [[ "${{ runner.os }}" == "Windows" ]]; then
+            dir wheelhouse\
+            echo "Inspecting wheel contents:"
             for wheel in wheelhouse/*.whl; do
               echo "Contents of $wheel:"
               python -m zipfile -l "$wheel"
             done
           else
+            ls -la wheelhouse/
+            echo "Inspecting wheel contents:"
             unzip -l wheelhouse/*.whl
             echo "Looking for shared libraries:"
             unzip -Z wheelhouse/*.whl | grep -E '\.(so|dylib|dll)' || echo "No shared library files found"
           fi
+        shell: bash
 
       - uses: actions/upload-artifact@v4
         with:
