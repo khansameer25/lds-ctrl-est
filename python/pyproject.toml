@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core", "pybind11", "pkgconfig", "numpy"]
+requires = ["scikit-build-core", "pybind11>=2.6.0,<2.11.0", "pkgconfig", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -13,3 +13,7 @@ dependencies = ["numpy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.scikit-build]
+cmake.args = ["-DCMAKE_CXX_STANDARD=17"]
+cmake.define = { CMAKE_CXX_STANDARD = "17" }

@@ -4,8 +4,9 @@ pybind11_add_module(poisson MODULE poisson.cpp)
 add_custom_target(python_modules DEPENDS base gaussian poisson)
 
 # need C++17 for pybind11 compatibility
-set_property(TARGET base gaussian poisson PROPERTY CXX_STANDARD 17)
-set_property(TARGET base gaussian poisson PROPERTY CXX_STANDARD_REQUIRED ON)
+target_compile_features(base PUBLIC cxx_std_17)
+target_compile_features(gaussian PUBLIC cxx_std_17)
+target_compile_features(poisson PUBLIC cxx_std_17)
 
 target_compile_definitions(base PRIVATE VERSION_INFO=${PROJECT_VERSION})
 target_compile_definitions(gaussian PRIVATE VERSION_INFO=${PROJECT_VERSION})
@@ -28,31 +29,14 @@ else()
         BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-# Apply manylinux compatibility settings to Python extension modules
+# Minimal manylinux compatibility for Python extension modules
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
-    # Add essential glibc compatibility compile definitions to each Python module
-    foreach(target base gaussian poisson)
-        target_compile_definitions(${target} PRIVATE
-            _GNU_SOURCE=1
-            _DEFAULT_SOURCE=1
-            # Force C11 standard to avoid C23 symbols
-            __STDC_VERSION__=201112L
-        )
-        target_compile_options(${target} PRIVATE
-            -D__GLIBC_MINOR__=17
-            # Keep default protections for stability
-            -std=gnu++17
-        )
-    endforeach()
+    message(STATUS "Applying minimal manylinux settings to Python extension modules")
     
-    message(STATUS "Applied simplified glibc 2.17 compatibility settings to Python extension modules")
-    
-    # Force C++17 standard for all Python modules for pybind11 compatibility
-    set_target_properties(base gaussian poisson PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS ON
-    )
+    # Just ensure C++17 standard
+    target_compile_features(base PUBLIC cxx_std_17)
+    target_compile_features(gaussian PUBLIC cxx_std_17)
+    target_compile_features(poisson PUBLIC cxx_std_17)
 endif()
 
 # Install the Python modules to the correct location

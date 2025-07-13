@@ -47,19 +47,25 @@ jobs:
             ls -la /project/vcpkg_installed/x64-linux/ || echo "Host vcpkg directory not found"
             echo "Checking available devtoolsets:"
             ls -la /opt/rh/
-            echo "=== Setting up available devtoolset ==="
-            # Try devtoolset-9 first, fall back to devtoolset-10 
+            echo "=== Setting up devtoolset-9 for better pybind11 compatibility ==="
+            # Force devtoolset-9 only (GCC 9.x is more compatible with pybind11)
             if [ -f /opt/rh/devtoolset-9/enable ]; then
               echo "Using devtoolset-9"
               source /opt/rh/devtoolset-9/enable
-            elif [ -f /opt/rh/devtoolset-10/enable ]; then
-              echo "Using devtoolset-10"
-              source /opt/rh/devtoolset-10/enable
             else
-              echo "No devtoolset found, using system compiler"
+              echo "devtoolset-9 not found, trying to install it"
+              yum install -y devtoolset-9-gcc devtoolset-9-gcc-c++ || echo "Failed to install devtoolset-9"
+              if [ -f /opt/rh/devtoolset-9/enable ]; then
+                source /opt/rh/devtoolset-9/enable
+              else
+                echo "ERROR: devtoolset-9 required for pybind11 compatibility"
+                exit 1
+              fi
             fi
             echo "GCC version after devtoolset setup:"
             gcc --version
+            echo "G++ version:"
+            g++ --version
             echo "GLIBC version check:"
             ldd --version
             echo "Using header-only Armadillo for maximum manylinux compatibility"

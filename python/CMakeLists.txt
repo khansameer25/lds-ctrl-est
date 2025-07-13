@@ -53,8 +53,7 @@ file(GLOB_RECURSE LIB_SOURCES
 add_library(${CMAKE_PROJECT_NAME} SHARED ${LIB_SOURCES})
 
 # Set C++17 standard (required for pybind11 compatibility)
-set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
 
 # Set shared library properties for better auditwheel compatibility
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
@@ -244,37 +243,14 @@ if(PTHREAD_LIB)
 endif()
 target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
 
-# Add specific compiler flags for better manylinux compatibility
+# Minimal manylinux compatibility settings
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
-    # Set conservative standards for manylinux compatibility
-    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-        C_STANDARD 99
-        CXX_STANDARD 17
-    )
+    message(STATUS "Configuring for manylinux compatibility with minimal settings")
     
-    # Add glibc compatibility compile definitions (reduced set for stability)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-        _GNU_SOURCE=1
-        _DEFAULT_SOURCE=1
-        _POSIX_C_SOURCE=200809L
-        # Force C11 standard to avoid C23 symbols
-        __STDC_VERSION__=201112L
-    )
+    # Only set essential standards without conflicting macros
+    target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
     
-    # Conservative compiler options for manylinux compatibility
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
-        -D__GLIBC_MINOR__=17
-        # Note: Keeping default stack protection for stability
-    )
-    
-    # Set C++ standard to C++17 for pybind11 compatibility
-    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS ON
-    )
-    
-    message(STATUS "Applied simplified manylinux compatibility settings with glibc 2.17 enforcement")
+    message(STATUS "Applied minimal manylinux compatibility settings")
 endif()
 
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)
