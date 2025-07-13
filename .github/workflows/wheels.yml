@@ -42,6 +42,9 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # Linux: Use pre-installed vcpkg dependencies from host
           CIBW_BEFORE_ALL_LINUX: |
+            echo "Installing system BLAS/LAPACK libraries for manylinux2014 compatibility..."
+            # Install system libraries that are glibc 2.17 compatible
+            yum install -y openblas-devel lapack-devel atlas-devel blas-devel || echo "Could not install some system libraries"
             echo "Using vcpkg dependencies installed on host"
             ls -la /project/vcpkg_installed/x64-linux/ || echo "Host vcpkg directory not found"
             echo "Checking available devtoolsets:"

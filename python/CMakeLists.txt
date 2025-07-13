@@ -66,73 +66,115 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 # Find dependencies using vcpkg or system
 find_package(PkgConfig QUIET)
 
-# Find Armadillo using vcpkg-compatible method
-find_package(Armadillo REQUIRED)
-if(Armadillo_FOUND OR ARMADILLO_FOUND)
-    if(TARGET armadillo)
-        target_link_libraries(${CMAKE_PROJECT_NAME} armadillo)
-        message(STATUS "Found Armadillo target")
-    else()
-        include_directories(${ARMADILLO_INCLUDE_DIRS})
-        target_link_libraries(${CMAKE_PROJECT_NAME} ${ARMADILLO_LIBRARIES})
-        message(STATUS "Found Armadillo libraries: ${ARMADILLO_LIBRARIES}")
+# Find Armadillo using vcpkg-compatible method or system libraries
+if(DEFINED ENV{CIBW_LINUX})
+    # For manylinux compatibility, try to use system Armadillo if available
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(ARMADILLO armadillo)
+        if(ARMADILLO_FOUND)
+            target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${ARMADILLO_INCLUDE_DIRS})
+            target_link_libraries(${CMAKE_PROJECT_NAME} ${ARMADILLO_LIBRARIES})
+            message(STATUS "Found system Armadillo via pkgconfig")
+        endif()
     endif()
-    message(STATUS "Found Armadillo")
+    
+    # Fall back to header-only if system version not found
+    if(NOT ARMADILLO_FOUND)
+        message(STATUS "Using header-only Armadillo for manylinux compatibility")
+        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ARMA_DONT_USE_WRAPPER)
+    endif()
+else()
+    # Use vcpkg version for non-manylinux builds
+    find_package(Armadillo REQUIRED)
+    if(Armadillo_FOUND OR ARMADILLO_FOUND)
+        if(TARGET armadillo)
+            target_link_libraries(${CMAKE_PROJECT_NAME} armadillo)
+            message(STATUS "Found Armadillo target")
+        else()
+            include_directories(${ARMADILLO_INCLUDE_DIRS})
+            target_link_libraries(${CMAKE_PROJECT_NAME} ${ARMADILLO_LIBRARIES})
+            message(STATUS "Found Armadillo libraries: ${ARMADILLO_LIBRARIES}")
+        endif()
+        message(STATUS "Found Armadillo")
+    endif()
 endif()
 
 # Link against the specific libraries that vcpkg installs
 # Based on the vcpkg output, we know it installs: openblas, lapack-reference
-# Try multiple paths to find vcpkg-installed libraries
+# For manylinux compatibility, avoid vcpkg static libraries that contain C23 symbols
+# Use system libraries instead which are compatible with glibc 2.17
+if(DEFINED ENV{CIBW_LINUX})
+    message(STATUS "Using system libraries for manylinux compatibility instead of vcpkg")
+    
+    # Use system BLAS/LAPACK libraries that are compatible with manylinux2014
+    find_library(OPENBLAS_LIB 
+        NAMES openblas
+        PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
+        NO_DEFAULT_PATH)
+    
+    find_library(LAPACK_REF_LIB 
+        NAMES lapack
+        PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
+        NO_DEFAULT_PATH)
+else()
+    # Try multiple paths to find vcpkg-installed libraries
 
-# Debug: Show what CMAKE_PREFIX_PATH contains
-message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-message(STATUS "vcpkg_INSTALLED_DIR: ${vcpkg_INSTALLED_DIR}")
-message(STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
+    # Debug: Show what CMAKE_PREFIX_PATH contains
+    message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+    message(STATUS "vcpkg_INSTALLED_DIR: ${vcpkg_INSTALLED_DIR}")
+    message(STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
 
-find_library(OPENBLAS_LIB 
-    NAMES openblas libopenblas
-    PATHS 
-        ${CMAKE_PREFIX_PATH}/lib
-        ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
-        /project/vcpkg_installed/x64-linux/lib
-    NO_DEFAULT_PATH)
-find_library(LAPACK_REF_LIB 
-    NAMES lapack liblapack
-    PATHS 
-        ${CMAKE_PREFIX_PATH}/lib
-        ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
-        /project/vcpkg_installed/x64-linux/lib
-    NO_DEFAULT_PATH)
+    find_library(OPENBLAS_LIB 
+        NAMES openblas libopenblas
+        PATHS 
+            ${CMAKE_PREFIX_PATH}/lib
+            ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
+            /project/vcpkg_installed/x64-linux/lib
+        NO_DEFAULT_PATH)
+    find_library(LAPACK_REF_LIB 
+        NAMES lapack liblapack
+        PATHS 
+            ${CMAKE_PREFIX_PATH}/lib
+            ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
+            /project/vcpkg_installed/x64-linux/lib
+        NO_DEFAULT_PATH)
+endif()
 
 # Search for gfortran in multiple possible locations, prioritizing system paths
-find_library(GFORTRAN_LIB 
-    NAMES gfortran libgfortran
-    PATHS 
-        /usr/lib64
-        /lib64
-        /usr/lib/x86_64-linux-gnu
-        /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
-        /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
-        /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
-        /usr/lib/gcc/x86_64-linux-gnu/10
-        /usr/lib/gcc/x86_64-linux-gnu/11
-        /usr/lib/gcc/x86_64-linux-gnu/9
-    NO_DEFAULT_PATH)
+# Skip gfortran for manylinux to avoid C23 symbol issues
+if(NOT DEFINED ENV{CIBW_LINUX})
+    find_library(GFORTRAN_LIB 
+        NAMES gfortran libgfortran
+        PATHS 
+            /usr/lib64
+            /lib64
+            /usr/lib/x86_64-linux-gnu
+            /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
+            /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
+            /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
+            /usr/lib/gcc/x86_64-linux-gnu/10
+            /usr/lib/gcc/x86_64-linux-gnu/11
+            /usr/lib/gcc/x86_64-linux-gnu/9
+        NO_DEFAULT_PATH)
 
-# Also look for libquadmath which is often needed with gfortran
-find_library(QUADMATH_LIB 
-    NAMES quadmath libquadmath
-    PATHS 
-        /usr/lib64
-        /lib64
-        /usr/lib/x86_64-linux-gnu
-        /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
-        /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
-        /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
-        /usr/lib/gcc/x86_64-linux-gnu/10
-        /usr/lib/gcc/x86_64-linux-gnu/11
-        /usr/lib/gcc/x86_64-linux-gnu/9
-    NO_DEFAULT_PATH)
+    # Also look for libquadmath which is often needed with gfortran
+    find_library(QUADMATH_LIB 
+        NAMES quadmath libquadmath
+        PATHS 
+            /usr/lib64
+            /lib64
+            /usr/lib/x86_64-linux-gnu
+            /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
+            /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
+            /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
+            /usr/lib/gcc/x86_64-linux-gnu/10
+            /usr/lib/gcc/x86_64-linux-gnu/11
+            /usr/lib/gcc/x86_64-linux-gnu/9
+        NO_DEFAULT_PATH)
+else()
+    message(STATUS "Skipping gfortran for manylinux compatibility")
+endif()
 
 message(STATUS "Library search results:")
 if(OPENBLAS_LIB)
@@ -149,25 +191,29 @@ else()
     message(STATUS "LAPACK reference library not found")
 endif()
 
-# Link Fortran runtime libraries in the correct order
-if(GFORTRAN_LIB)
-    target_link_libraries(${CMAKE_PROJECT_NAME} ${GFORTRAN_LIB})
-    message(STATUS "Found and linked gfortran library: ${GFORTRAN_LIB}")
-else()
-    message(STATUS "gfortran library not found")
-    # Try to link by name if not found by path
-    target_link_libraries(${CMAKE_PROJECT_NAME} gfortran)
-    message(STATUS "Attempting to link gfortran by name")
-endif()
+# Link Fortran runtime libraries in the correct order (skip for manylinux)
+if(NOT DEFINED ENV{CIBW_LINUX})
+    if(GFORTRAN_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${GFORTRAN_LIB})
+        message(STATUS "Found and linked gfortran library: ${GFORTRAN_LIB}")
+    else()
+        message(STATUS "gfortran library not found")
+        # Try to link by name if not found by path
+        target_link_libraries(${CMAKE_PROJECT_NAME} gfortran)
+        message(STATUS "Attempting to link gfortran by name")
+    endif()
 
-if(QUADMATH_LIB)
-    target_link_libraries(${CMAKE_PROJECT_NAME} ${QUADMATH_LIB})
-    message(STATUS "Found and linked quadmath library: ${QUADMATH_LIB}")
+    if(QUADMATH_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${QUADMATH_LIB})
+        message(STATUS "Found and linked quadmath library: ${QUADMATH_LIB}")
+    else()
+        message(STATUS "quadmath library not found")
+        # Try to link by name if not found by path
+        target_link_libraries(${CMAKE_PROJECT_NAME} quadmath)
+        message(STATUS "Attempting to link quadmath by name")
+    endif()
 else()
-    message(STATUS "quadmath library not found")
-    # Try to link by name if not found by path
-    target_link_libraries(${CMAKE_PROJECT_NAME} quadmath)
-    message(STATUS "Attempting to link quadmath by name")
+    message(STATUS "Skipping gfortran and quadmath for manylinux compatibility")
 endif()
 
 # Also link pthread and math libraries which are often needed
