@@ -72,7 +72,7 @@ jobs:
             ./vcpkg/bootstrap-vcpkg.sh
             ./vcpkg/vcpkg install --triplet=x64-linux
           CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library}
-          CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
+          CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
           # macOS and Windows: Use host-installed dependencies
           CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-osx LDSCTRLEST_BUILD_PYTHON=ON
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-windows LDSCTRLEST_BUILD_PYTHON=ON

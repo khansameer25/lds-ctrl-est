@@ -56,6 +56,13 @@ add_library(${CMAKE_PROJECT_NAME} SHARED ${LIB_SOURCES})
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 
+# Set shared library properties for better auditwheel compatibility
+set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    POSITION_INDEPENDENT_CODE ON
+)
+
 # Find dependencies using vcpkg or system
 find_package(PkgConfig QUIET)
 
