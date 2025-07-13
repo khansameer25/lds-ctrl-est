@@ -63,13 +63,20 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.2
         env:
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-          CIBW_BUILD: "cp311-*" # Build only Python 3.11 for faster iteration
-          CIBW_SKIP: "pp*" # Skip PyPy builds (incompatible with pybind11)
+          CIBW_BUILD: "cp311-*"  # Build only Python 3.11 for faster iteration
+          CIBW_SKIP: "pp*"  # Skip PyPy builds (incompatible with pybind11)
+          # Linux: Install vcpkg dependencies inside container
+          CIBW_BEFORE_ALL_LINUX: |
+            yum install -y curl zip unzip tar git
+            chmod +x vcpkg/bootstrap-vcpkg.sh
+            ./vcpkg/bootstrap-vcpkg.sh
+            ./vcpkg/vcpkg install --triplet=x64-linux
+          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON
+          CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
+          # macOS and Windows: Use host-installed dependencies
           CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-osx LDSCTRLEST_BUILD_PYTHON=ON
-          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-windows LDSCTRLEST_BUILD_PYTHON=ON
           CIBW_BEFORE_BUILD_MACOS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ github.workspace }}/vcpkg_installed/x64-osx/
-          CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ github.workspace }}/vcpkg_installed/x64-linux/
           CIBW_BEFORE_BUILD_WINDOWS: echo "CMAKE_TOOLCHAIN_FILE=%CMAKE_TOOLCHAIN_FILE%" && echo "CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%" && echo "LDSCTRLEST_BUILD_PYTHON=%LDSCTRLEST_BUILD_PYTHON%" && dir ${{ github.workspace }}/vcpkg_installed/x64-windows/
           CIBW_TEST_COMMAND: python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
         with:
