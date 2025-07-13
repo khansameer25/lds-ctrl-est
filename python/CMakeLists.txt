@@ -179,18 +179,13 @@ target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
 
 # Add specific compiler flags for better manylinux compatibility
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
-    # Ensure we use older C standard library functions for manylinux compatibility
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE 
-        _GNU_SOURCE
-    )
-    
-    # Set C standard to ensure compatibility
+    # Set conservative standards for manylinux compatibility
     set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-        C_STANDARD 11
+        C_STANDARD 99
         CXX_STANDARD 14
     )
     
-    message(STATUS "Applied manylinux compatibility settings")
+    message(STATUS "Applied manylinux compatibility settings with conservative C/C++ standards")
 endif()
 
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)

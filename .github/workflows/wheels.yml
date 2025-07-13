@@ -38,17 +38,40 @@ jobs:
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
           CIBW_BUILD: "cp311-*" # Build only Python 3.11 for faster iteration
           CIBW_SKIP: "pp*" # Skip PyPy builds (incompatible with pybind11)
+          # Use older manylinux image for better glibc compatibility
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # Linux: Use pre-installed vcpkg dependencies from host
           CIBW_BEFORE_ALL_LINUX: |
             echo "Using vcpkg dependencies installed on host"
             ls -la /project/vcpkg_installed/x64-linux/ || echo "Host vcpkg directory not found"
-          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library} VERBOSE=1
+            echo "Checking available devtoolsets:"
+            ls -la /opt/rh/
+            echo "=== Setting up devtoolset-9 for better manylinux2014 compatibility ==="
+            # Use devtoolset-9 instead of newer versions for better glibc compatibility
+            source /opt/rh/devtoolset-9/enable || echo "devtoolset-9 not available, will use default"
+            echo "GCC version after devtoolset setup:"
+            gcc --version
+            echo "GLIBC version check:"
+            ldd --version
+          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library} VERBOSE=1 CC=gcc CXX=g++
           CIBW_BUILD_VERBOSITY_LINUX: 1
-          CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found" && echo "Looking for gfortran libraries:" && find /usr -name "*gfortran*" 2>/dev/null || echo "gfortran not found" && find /opt -name "*gfortran*" 2>/dev/null || echo "gfortran not found in /opt"
+          CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found" && echo "Looking for gfortran libraries:" && find /usr -name "*gfortran*" 2>/dev/null || echo "gfortran not found" && find /opt -name "*gfortran*" 2>/dev/null || echo "gfortran not found in /opt" && echo "Checking glibc version:" && ldd --version
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+            echo "=== Repairing wheel with auditwheel ==="
+            echo "Wheel before repair: {wheel}"
+            auditwheel show {wheel}
+            # Try repair with specific glibc symbol exclusion if needed
+            auditwheel repair -w {dest_dir} {wheel} --exclude libgfortran.so.5 --exclude libquadmath.so.0 || auditwheel repair -w {dest_dir} {wheel}
+            echo "=== Repair completed ==="
           CIBW_TEST_COMMAND: |
-            echo "Checking linked libraries in wheel:"
-            python -c "import ldsctrlest; lib_path = ldsctrlest.__file__.replace('__init__.py', 'libldsctrlest.so.0'); print('Library path:', lib_path)"
-            python -c "import ldsctrlest; lib_path = ldsctrlest.__file__.replace('__init__.py', 'libldsctrlest.so.0'); import subprocess; result = subprocess.run(['ldd', lib_path], capture_output=True, text=True); print('ldd output:'); print(result.stdout); print('Looking for gfortran/lapack in ldd:'); [print(line) for line in result.stdout.split('\n') if any(x in line.lower() for x in ['gfortran', 'lapack', 'blas'])]"
+            echo "=== Testing wheel import ==="
+            echo "Python version:"
+            python --version
+            echo "Checking glibc symbols in Python environment:"
+            python -c "import os; print('GLIBC_2.17' in str(os.system('ldd --version')))"
+            echo "Attempting import:"
+            python -c "import ldsctrlest; print('Import successful!')" || echo "Import failed - checking symbols"
+            python -c "import ldsctrlest; lib_path = ldsctrlest.__file__.replace('__init__.py', 'libldsctrlest.so.0'); import subprocess; result = subprocess.run(['ldd', lib_path], capture_output=True, text=True); print('ldd output:'); print(result.stdout)" || echo "Could not run ldd analysis"
             python -c "import sys; print('Python version:', sys.version); print('Looking for ldsctrlest modules...'); import ldsctrlest; print('✅ Import successful!')"
         with:
           package-dir: python
