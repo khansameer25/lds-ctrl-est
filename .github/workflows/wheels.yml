@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # Focus on Linux only for debugging
+        os: [ubuntu-latest, macos-latest] # Re-enable macOS now that segfaults are fixed
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
         env:
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
           CIBW_BUILD: "cp311-*" # Build only Python 3.11 for faster iteration
-          CIBW_SKIP: "pp*" # Skip PyPy builds (incompatible with pybind11)
+          CIBW_SKIP: "pp* *-musllinux_*" # Skip PyPy builds and musllinux (incompatible with our setup)
           # Only build for x86_64, not i686 (32-bit) since vcpkg is x64-linux
           CIBW_ARCHS_LINUX: "x86_64"
           # Use older manylinux image for better glibc compatibility
