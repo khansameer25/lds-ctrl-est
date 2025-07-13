@@ -78,6 +78,11 @@ if(Armadillo_FOUND OR ARMADILLO_FOUND)
     message(STATUS "Found Armadillo")
 endif()
 
+# Explicitly find and link LAPACK and BLAS (required by Armadillo)
+find_package(LAPACK REQUIRED)
+find_package(BLAS REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+
 # Find carma for Armadillo-NumPy conversion (already added as subdirectory)
 # carma target should be available from add_subdirectory above
 target_link_libraries(${CMAKE_PROJECT_NAME} carma::carma)
