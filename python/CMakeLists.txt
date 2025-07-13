@@ -90,22 +90,64 @@ find_library(LAPACK_REF_LIB
     NAMES lapack liblapack
     PATHS ${CMAKE_PREFIX_PATH}/lib
     NO_DEFAULT_PATH)
+
+# Search for gfortran in multiple possible locations
 find_library(GFORTRAN_LIB 
     NAMES gfortran libgfortran
-    PATHS /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10 /usr/lib/gcc/x86_64-linux-gnu/10 /usr/lib64
+    PATHS 
+        /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
+        /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
+        /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
+        /usr/lib/gcc/x86_64-linux-gnu/10
+        /usr/lib/gcc/x86_64-linux-gnu/11
+        /usr/lib/gcc/x86_64-linux-gnu/9
+        /usr/lib64
+        /usr/lib/x86_64-linux-gnu
+        /lib64
     NO_DEFAULT_PATH)
 
+# Also look for libquadmath which is often needed with gfortran
+find_library(QUADMATH_LIB 
+    NAMES quadmath libquadmath
+    PATHS 
+        /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
+        /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
+        /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
+        /usr/lib/gcc/x86_64-linux-gnu/10
+        /usr/lib/gcc/x86_64-linux-gnu/11
+        /usr/lib/gcc/x86_64-linux-gnu/9
+        /usr/lib64
+        /usr/lib/x86_64-linux-gnu
+        /lib64
+    NO_DEFAULT_PATH)
+
+message(STATUS "Library search results:")
 if(OPENBLAS_LIB)
     target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENBLAS_LIB})
-    message(STATUS "Found OpenBLAS library: ${OPENBLAS_LIB}")
+    message(STATUS "Found and linked OpenBLAS library: ${OPENBLAS_LIB}")
+else()
+    message(STATUS "OpenBLAS library not found")
 endif()
+
 if(LAPACK_REF_LIB)
     target_link_libraries(${CMAKE_PROJECT_NAME} ${LAPACK_REF_LIB})
-    message(STATUS "Found LAPACK reference library: ${LAPACK_REF_LIB}")
+    message(STATUS "Found and linked LAPACK reference library: ${LAPACK_REF_LIB}")
+else()
+    message(STATUS "LAPACK reference library not found")
 endif()
+
 if(GFORTRAN_LIB)
     target_link_libraries(${CMAKE_PROJECT_NAME} ${GFORTRAN_LIB})
-    message(STATUS "Found gfortran library: ${GFORTRAN_LIB}")
+    message(STATUS "Found and linked gfortran library: ${GFORTRAN_LIB}")
+else()
+    message(STATUS "gfortran library not found")
+endif()
+
+if(QUADMATH_LIB)
+    target_link_libraries(${CMAKE_PROJECT_NAME} ${QUADMATH_LIB})
+    message(STATUS "Found and linked quadmath library: ${QUADMATH_LIB}")
+else()
+    message(STATUS "quadmath library not found")
 endif()
 
 # Also link pthread and math libraries which are often needed
