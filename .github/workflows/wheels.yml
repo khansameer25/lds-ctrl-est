@@ -64,7 +64,6 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.2
         env:
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-          CIBW_BUILD: "cp311-*" # Build only Python 3.11 for faster iteration
           CIBW_SKIP: "pp* *-musllinux_*" # Skip PyPy builds and musllinux (incompatible with our setup)
           # Only build for x86_64, not i686 (32-bit) since vcpkg is x64-linux
           CIBW_ARCHS_LINUX: "x86_64"
@@ -120,7 +119,7 @@ jobs:
             python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
-          only: 'cp311-*'
+          only: ${{ (matrix.os == 'macos-latest' && 'cp311-macosx_*') || (matrix.os == 'windows-latest' && 'cp311-win_amd64') || 'cp311-manylinux_x86_64' }}
 
       - name: List built wheels
         run: |
