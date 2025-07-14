@@ -23,7 +23,7 @@ jobs:
       - name: Run vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgJsonGlob: "vcpkg.json
+          vcpkgJsonGlob: "vcpkg.json"
           runVcpkgInstall: true
 
       - name: Verify vcpkg installation
