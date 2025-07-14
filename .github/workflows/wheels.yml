@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest] # Add windows-latest for Windows support
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -27,41 +27,14 @@ jobs:
           runVcpkgFormatString: "['install', '--triplet', '$[env.VCPKG_DEFAULT_TRIPLET]']"
           runVcpkgInstall: true
 
-      - name: Verify vcpkg installation
-        run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            ls -la vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            echo "Vcpkg installation directory:"
-            ls -la vcpkg_installed/arm64-osx/ || echo "vcpkg directory not found"
-            echo "Toolchain file:"
-            ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
-          elif [ "${{ runner.os }}" == "Windows" ]; then
-            echo "Vcpkg installation directory:"
-            ls -la vcpkg_installed/x64-windows/ || echo "vcpkg directory not found"
-            echo "Toolchain file:"
-            ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
-          fi
-        shell: bash
-
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.2
         with:
           package-dir: python
-          # We still need this dynamic 'only' selector
+          config-file: python/pyproject.toml
           only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
         env:
-          # This variable is set by GitHub Actions, so we pass it in
           GITHUB_WORKSPACE: ${{ github.workspace }}
-
-      - name: List built wheels
-        run: |
-          ls -la wheelhouse/
-          echo "Inspecting wheel contents:"
-          unzip -l wheelhouse/*.whl
-          echo "Looking for shared libraries:"
-          unzip -Z wheelhouse/*.whl | grep -E '\.(so|dylib|dll)' || echo "No shared library files found"
-        shell: bash
 
       - uses: actions/upload-artifact@v4
         with:
