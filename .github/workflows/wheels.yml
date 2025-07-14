@@ -38,9 +38,11 @@ jobs:
 
       - name: Build wheels (Windows)
         if: runner.os == 'Windows'
-        run: pipx run cibuildwheel --output-dir wheelhouse --only cp312-win_amd64 python
+        run: pipx run cibuildwheel --output-dir wheelhouse --only cp311-win_amd64 python
         env:
-          GITHUB_WORKSPACE: ${{ github.workspace }}
+          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/vcpkg_installed/x64-windows
+          LDSCTRLEST_BUILD_PYTHON: ON
 
       - uses: actions/upload-artifact@v4
         with:

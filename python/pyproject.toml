@@ -44,11 +44,6 @@ auditwheel show {wheel}
 auditwheel repair -w {dest_dir} {wheel} --exclude libgfortran.so.5 --exclude libquadmath.so.0 || auditwheel repair -w {dest_dir} {wheel}
 """
 
-# == Windows ==
-[tool.cibuildwheel.windows]
-# Use environment variable expansion for the path
-environment = { CMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake", CMAKE_PREFIX_PATH="$GITHUB_WORKSPACE\\vcpkg_installed\\x64-windows", LDSCTRLEST_BUILD_PYTHON="ON" }
-
 # == macOS ==
 [tool.cibuildwheel.macos]
 # Use environment variable expansion for the path
