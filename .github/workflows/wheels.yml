@@ -20,28 +20,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies with vcpkg (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          chmod +x vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/vcpkg install --triplet=x64-linux
-
-      - name: Install dependencies with vcpkg (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          # Bootstrap vcpkg if needed
-          if [ ! -f "./vcpkg/vcpkg" ]; then
-            ./vcpkg/bootstrap-vcpkg.sh
-          fi
-          # Install dependencies using the project's vcpkg.json for arm64
-          ./vcpkg/vcpkg install --triplet=arm64-osx
-
-      - name: Install dependencies with vcpkg (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg.exe install --triplet=x64-windows
+      - name: Run vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: "vcpkg.json"
+          runVcpkgInstall: true
 
       - name: Verify vcpkg installation
         run: |
@@ -116,7 +99,7 @@ jobs:
             python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
-          config-file: ''
+          config-file: ""
           only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
 
       - name: List built wheels
