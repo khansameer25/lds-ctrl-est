@@ -46,62 +46,13 @@ jobs:
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.2
-        env:
-          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-          CIBW_SKIP: "pp* *-musllinux_*"
-          CIBW_ARCHS_LINUX: "x86_64"
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_BEFORE_ALL_LINUX: |
-            echo "=== Setting up manylinux2014 build environment ==="
-            echo "Using vcpkg dependencies installed on host"
-            ls -la /project/vcpkg_installed/x64-linux/ || echo "Host vcpkg directory not found"
-            echo "Checking available devtoolsets:"
-            ls -la /opt/rh/
-            echo "=== Setting up devtoolset-10 with pybind11 compatibility fixes ==="
-            # Use devtoolset-10 (only one available in manylinux2014)
-            if [ -f /opt/rh/devtoolset-10/enable ]; then
-              echo "Using devtoolset-10"
-              source /opt/rh/devtoolset-10/enable
-            else
-              echo "No devtoolset found, using system compiler"
-            fi
-            echo "GCC version after devtoolset setup:"
-            gcc --version
-            echo "G++ version:"
-            g++ --version
-            echo "GLIBC version check:"
-            ldd --version
-            echo "Using header-only Armadillo for maximum manylinux compatibility"
-          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library} VERBOSE=1 CC=gcc CXX=g++
-          CIBW_BUILD_VERBOSITY_LINUX: 1
-          # macOS-specific configuration (from working wheels-working branch)
-          CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/arm64-osx LDSCTRLEST_BUILD_PYTHON=ON
-          CIBW_BEFORE_BUILD_MACOS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ github.workspace }}/vcpkg_installed/arm64-osx/
-          # Windows-specific configuration
-          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-windows LDSCTRLEST_BUILD_PYTHON=ON
-          CIBW_BEFORE_BUILD_WINDOWS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ github.workspace }}/vcpkg_installed/x64-windows
-          CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found" && echo "Looking for gfortran libraries:" && find /usr -name "*gfortran*" 2>/dev/null || echo "gfortran not found" && find /opt -name "*gfortran*" 2>/dev/null || echo "gfortran not found in /opt" && echo "Checking glibc version:" && ldd --version
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-            echo "=== Repairing wheel with auditwheel ==="
-            echo "Wheel before repair: {wheel}"
-            auditwheel show {wheel}
-            # Try repair with specific glibc symbol exclusion if needed
-            auditwheel repair -w {dest_dir} {wheel} --exclude libgfortran.so.5 --exclude libquadmath.so.0 || auditwheel repair -w {dest_dir} {wheel}
-            echo "=== Repair completed ==="
-          CIBW_TEST_COMMAND: |
-            echo "=== Testing wheel import ==="
-            echo "Python version:"
-            python --version
-            echo "Testing basic import:"
-            python -c "import ldsctrlest; print('✅ Basic import successful!')"
-            echo "Testing module access:"
-            python -c "import ldsctrlest; print('Available modules:', dir(ldsctrlest)); print('✅ Module access successful!')"
-            echo "Testing numpy integration:"
-            python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
-          config-file: ''
-          only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
+          # We still need this dynamic 'only' selector
+          only: ${{ (matrix.os == 'macos-latest' && 'cp311-macosx_*') || (matrix.os == 'windows-latest' && 'cp311-win_amd64') || 'cp311-manylinux_x86_64' }}
+        env:
+          # This variable is set by GitHub Actions, so we pass it in
+          GITHUB_WORKSPACE: ${{ github.workspace }}
 
       - name: List built wheels
         run: |
