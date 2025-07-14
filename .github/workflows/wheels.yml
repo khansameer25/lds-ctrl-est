@@ -23,30 +23,24 @@ jobs:
       - name: Run vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgJsonGlob: "vcpkg.json"
+          vcpkgJsonGlob: "vcpkg.json
           runVcpkgInstall: true
 
       - name: Verify vcpkg installation
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            ls -la vcpkg_installed/x64-linux/ || echo "vcpkg directory not found"
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            echo "Vcpkg installation directory:"
-            ls -la vcpkg_installed/arm64-osx/ || echo "vcpkg directory not found"
-            echo "Toolchain file:"
-            ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
-          elif [ "${{ runner.os }}" == "Windows" ]; then
-            echo "Vcpkg installation directory:"
-            ls -la vcpkg_installed/x64-windows/ || echo "vcpkg directory not found"
-            echo "Toolchain file:"
-            ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
-          fi
+          echo "Vcpkg root: $RUNVCPKG_VCPKG_ROOT"
+          echo "Default triplet: $VCPKG_DEFAULT_TRIPLET"
+          echo "Vcpkg installation directory:"
+          ls -la "$RUNVCPKG_VCPKG_ROOT/installed/$VCPKG_DEFAULT_TRIPLET" || echo "vcpkg directory not found"
+          echo "Toolchain file:"
+          ls -la "$RUNVCPKG_VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
         shell: bash
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.2
         env:
-          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+          CMAKE_TOOLCHAIN_FILE: ${{ env.RUNVCPKG_VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          CMAKE_PREFIX_PATH: ${{ env.RUNVCPKG_VCPKG_ROOT }}/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_ARCHS_LINUX: "x86_64"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
@@ -71,14 +65,14 @@ jobs:
             echo "GLIBC version check:"
             ldd --version
             echo "Using header-only Armadillo for maximum manylinux compatibility"
-          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=/project/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=/project/vcpkg_installed/x64-linux LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library} VERBOSE=1 CC=gcc CXX=g++
+          CIBW_ENVIRONMENT_LINUX: CMAKE_TOOLCHAIN_FILE=${{ env.RUNVCPKG_VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ env.RUNVCPKG_VCPKG_ROOT }}/installed/${{ env.VCPKG_DEFAULT_TRIPLET }} LDSCTRLEST_BUILD_PYTHON=ON CIBW_LINUX=1 Python3_EXECUTABLE={python} Python3_INCLUDE_DIR={python_include} Python3_LIBRARY={python_library} VERBOSE=1 CC=gcc CXX=g++
           CIBW_BUILD_VERBOSITY_LINUX: 1
           # macOS-specific configuration (from working wheels-working branch)
-          CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/arm64-osx LDSCTRLEST_BUILD_PYTHON=ON
-          CIBW_BEFORE_BUILD_MACOS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ github.workspace }}/vcpkg_installed/arm64-osx/
+          CIBW_ENVIRONMENT_MACOS: CMAKE_TOOLCHAIN_FILE=${{ env.RUNVCPKG_VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ env.RUNVCPKG_VCPKG_ROOT }}/installed/${{ env.VCPKG_DEFAULT_TRIPLET }} LDSCTRLEST_BUILD_PYTHON=ON
+          CIBW_BEFORE_BUILD_MACOS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ env.RUNVCPKG_VCPKG_ROOT }}/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}
           # Windows-specific configuration
-          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg_installed/x64-windows LDSCTRLEST_BUILD_PYTHON=ON
-          CIBW_BEFORE_BUILD_WINDOWS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ github.workspace }}/vcpkg_installed/x64-windows
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE=${{ env.RUNVCPKG_VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake CMAKE_PREFIX_PATH=${{ env.RUNVCPKG_VCPKG_ROOT }}/installed/${{ env.VCPKG_DEFAULT_TRIPLET }} LDSCTRLEST_BUILD_PYTHON=ON
+          CIBW_BEFORE_BUILD_WINDOWS: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && ls -la ${{ env.RUNVCPKG_VCPKG_ROOT }}/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}
           CIBW_BEFORE_BUILD_LINUX: echo "CMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE" && echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" && echo "LDSCTRLEST_BUILD_PYTHON=$LDSCTRLEST_BUILD_PYTHON" && echo "Python paths:" && echo "Python3_EXECUTABLE=$Python3_EXECUTABLE" && echo "Python3_INCLUDE_DIR=$Python3_INCLUDE_DIR" && echo "Python3_LIBRARY=$Python3_LIBRARY" && ls -la /project/vcpkg_installed/x64-linux/ || echo "vcpkg directory not found" && echo "Looking for gfortran libraries:" && find /usr -name "*gfortran*" 2>/dev/null || echo "gfortran not found" && find /opt -name "*gfortran*" 2>/dev/null || echo "gfortran not found in /opt" && echo "Checking glibc version:" && ldd --version
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             echo "=== Repairing wheel with auditwheel ==="
@@ -99,7 +93,7 @@ jobs:
             python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
-          config-file: ""
+          config-file: ''
           only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
 
       - name: List built wheels
