@@ -116,6 +116,7 @@ jobs:
             python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
+          config-file: ''
           only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
 
       - name: List built wheels
