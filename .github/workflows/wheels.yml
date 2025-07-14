@@ -25,6 +25,7 @@ jobs:
         with:
           vcpkgJsonGlob: "vcpkg.json"
           runVcpkgInstall: true
+          vcpkgTriplet: ${{ matrix.os == 'macos-latest' && 'arm64-osx' || matrix.os == 'windows-latest' && 'x64-windows' || 'x64-linux' }}
 
       - name: Verify vcpkg installation
         run: |
@@ -93,7 +94,7 @@ jobs:
             python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
-          config-file: ''
+          config-file: ""
           only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
 
       - name: List built wheels
