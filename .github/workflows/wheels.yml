@@ -27,12 +27,18 @@ jobs:
           runVcpkgFormatString: "['install', '--triplet', '$[env.VCPKG_DEFAULT_TRIPLET]']"
           runVcpkgInstall: true
 
-      - name: Build wheels
+      - name: Build wheels (macOS & Linux)
+        if: runner.os != 'Windows'
         uses: pypa/cibuildwheel@v2.16.2
         with:
           package-dir: python
-          config-file: python/pyproject.toml
-          only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
+          only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || 'cp312-manylinux_x86_64' }}
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+
+      - name: Build wheels (Windows)
+        if: runner.os == 'Windows'
+        run: pipx run cibuildwheel --output-dir wheelhouse --only cp312-win_amd64 python
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}
 
