@@ -54,9 +54,9 @@ jobs:
             ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
           elif [ "${{ runner.os }}" == "Windows" ]; then
             echo "Vcpkg installation directory:"
-            dir vcpkg_installed\x64-windows || echo "vcpkg directory not found"
+            ls -la vcpkg_installed/x64-windows/ || echo "vcpkg directory not found"
             echo "Toolchain file:"
-            dir vcpkg\scripts\buildsystems\vcpkg.cmake
+            ls -la vcpkg/scripts/buildsystems/vcpkg.cmake
           fi
         shell: bash
 
