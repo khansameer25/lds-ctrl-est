@@ -2,9 +2,9 @@ name: Build Python Wheels
 
 on:
   push:
-    branches: [test]
+    branches: [wheels-working]
   pull_request:
-    branches: [test]
+    branches: [wheels-working]
   workflow_dispatch:
 
 jobs:
