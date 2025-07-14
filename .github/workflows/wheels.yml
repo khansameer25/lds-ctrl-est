@@ -67,6 +67,7 @@ jobs:
           CIBW_SKIP: "pp* *-musllinux_*" # Skip PyPy builds and musllinux (incompatible with our setup)
           # Only build for x86_64, not i686 (32-bit) since vcpkg is x64-linux
           CIBW_ARCHS_LINUX: "x86_64"
+          CIBW_ARCHS_MACOS: "arm64"
           # Use older manylinux image for better glibc compatibility
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # Linux: Use pre-installed vcpkg dependencies from host
