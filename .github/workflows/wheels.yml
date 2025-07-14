@@ -64,13 +64,9 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.2
         env:
           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-          CIBW_SKIP: "pp* *-musllinux_*" # Skip PyPy builds and musllinux (incompatible with our setup)
-          # Only build for x86_64, not i686 (32-bit) since vcpkg is x64-linux
+          CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_ARCHS_LINUX: "x86_64"
-          CIBW_ARCHS_MACOS: "arm64"
-          # Use older manylinux image for better glibc compatibility
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          # Linux: Use pre-installed vcpkg dependencies from host
           CIBW_BEFORE_ALL_LINUX: |
             echo "=== Setting up manylinux2014 build environment ==="
             echo "Using vcpkg dependencies installed on host"
@@ -120,7 +116,7 @@ jobs:
             python -c "import ldsctrlest; import numpy as np; print('NumPy version:', np.__version__); print('✅ NumPy integration successful!')"
         with:
           package-dir: python
-          only: ${{ (matrix.os == 'macos-latest' && 'cp311-macosx_*') || (matrix.os == 'windows-latest' && 'cp311-win_amd64') || 'cp311-manylinux_x86_64' }}
+          only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || (matrix.os == 'windows-latest' && 'cp312-win_amd64') || 'cp312-manylinux_x86_64' }}
 
       - name: List built wheels
         run: |
