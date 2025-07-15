@@ -116,7 +116,7 @@ if(WIN32 AND NOT DEFINED ENV{CIBW_LINUX})
     # manually linking the gfortran runtime libraries. This fixes the
     # "cannot open input file 'gfortran.lib'" error.
     message(STATUS "Adding gfortran and quadmath linker dependencies for Windows.")
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE gfortran quadmath)
+    target_link_libraries(${CMAKE_PROJECT_NAME} gfortran quadmath)
 endif()
 
 # Link against the specific libraries that vcpkg installs
