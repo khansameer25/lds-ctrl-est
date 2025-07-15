@@ -154,7 +154,9 @@ endif()
 
 # Search for gfortran in multiple possible locations, prioritizing system paths
 # Skip gfortran for manylinux to avoid C23 symbol issues
-if(NOT DEFINED ENV{CIBW_LINUX})
+
+# Only search for and link gfortran/quadmath on Unix-like systems (not Windows)
+if(NOT DEFINED ENV{CIBW_LINUX} AND NOT WIN32)
     find_library(GFORTRAN_LIB 
         NAMES gfortran libgfortran
         PATHS 
@@ -184,7 +186,7 @@ if(NOT DEFINED ENV{CIBW_LINUX})
             /usr/lib/gcc/x86_64-linux-gnu/9
         NO_DEFAULT_PATH)
 else()
-    message(STATUS "Skipping gfortran for manylinux compatibility")
+    message(STATUS "Skipping gfortran/quadmath for Windows or manylinux compatibility")
 endif()
 
 message(STATUS "Library search results:")
@@ -216,8 +218,9 @@ if(DEFINED ENV{CIBW_LINUX})
     endif()
 endif()
 
-# Link Fortran runtime libraries based on platform
-if(NOT DEFINED ENV{CIBW_LINUX})
+
+# Link Fortran runtime libraries only on Unix-like systems (not Windows)
+if(NOT DEFINED ENV{CIBW_LINUX} AND NOT WIN32)
     if(APPLE)
         # macOS: Use Accelerate framework instead of gfortran
         find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -228,29 +231,23 @@ if(NOT DEFINED ENV{CIBW_LINUX})
             message(STATUS "Accelerate framework not found")
         endif()
     else()
-        # Non-macOS platforms: try gfortran
+        # Non-macOS Unix platforms: try gfortran/quadmath
         if(GFORTRAN_LIB)
             target_link_libraries(${CMAKE_PROJECT_NAME} ${GFORTRAN_LIB})
             message(STATUS "Found and linked gfortran library: ${GFORTRAN_LIB}")
         else()
-            message(STATUS "gfortran library not found")
-            # Try to link by name if not found by path
-            target_link_libraries(${CMAKE_PROJECT_NAME} gfortran)
-            message(STATUS "Attempting to link gfortran by name")
+            message(STATUS "gfortran library not found; not linking gfortran")
         endif()
 
         if(QUADMATH_LIB)
             target_link_libraries(${CMAKE_PROJECT_NAME} ${QUADMATH_LIB})
             message(STATUS "Found and linked quadmath library: ${QUADMATH_LIB}")
         else()
-            message(STATUS "quadmath library not found")
-            # Try to link by name if not found by path
-            target_link_libraries(${CMAKE_PROJECT_NAME} quadmath)
-            message(STATUS "Attempting to link quadmath by name")
+            message(STATUS "quadmath library not found; not linking quadmath")
         endif()
     endif()
 else()
-    message(STATUS "Skipping gfortran and quadmath for manylinux compatibility")
+    message(STATUS "Skipping gfortran and quadmath for Windows or manylinux compatibility")
 endif()
 
 # Also link pthread and math libraries which are often needed
