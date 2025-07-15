@@ -127,12 +127,10 @@ if(DEFINED ENV{CIBW_LINUX})
         PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
         NO_DEFAULT_PATH)
 elseif(WIN32)
-    # Windows: Use vcpkg CMake targets for OpenBLAS and LAPACK
-    message(STATUS "Using vcpkg CMake targets for OpenBLAS and LAPACK on Windows")
+    # Windows: Use vcpkg CMake target for OpenBLAS (provides LAPACK)
+    message(STATUS "Using vcpkg CMake target for OpenBLAS on Windows (provides LAPACK)")
     find_package(OpenBLAS CONFIG REQUIRED)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OpenBLAS::OpenBLAS)
-    find_package(lapack-reference CONFIG REQUIRED)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE lapack-reference)
+    target_link_libraries(${CMAKE_PROJECT_NAME} OpenBLAS::OpenBLAS)
 else()
     # Other platforms: Try vcpkg Linux-style paths
     message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
