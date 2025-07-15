@@ -269,7 +269,9 @@ find_library(PTHREAD_LIB pthread)
 if(PTHREAD_LIB)
     target_link_libraries(${CMAKE_PROJECT_NAME} ${PTHREAD_LIB})
 endif()
-target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
+if(NOT WIN32)
+    target_link_libraries(${CMAKE_PROJECT_NAME} m) # math library
+endif()
 
 # Minimal manylinux compatibility settings
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
