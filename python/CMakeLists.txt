@@ -127,24 +127,44 @@ if(DEFINED ENV{CIBW_LINUX})
         PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
         NO_DEFAULT_PATH)
 elseif(WIN32)
-    # Windows: Use vcpkg CMake targets for OpenBLAS and lapack-reference (BLAS and LAPACK)
-    message(STATUS "Using vcpkg CMake targets for OpenBLAS and lapack-reference on Windows (provides BLAS and LAPACK)")
+    # Windows: Use vcpkg CMake target for OpenBLAS (BLAS) and manually find lapack.lib (LAPACK)
+    message(STATUS "Using vcpkg CMake target for OpenBLAS and manually linking lapack.lib for LAPACK on Windows")
     find_package(OpenBLAS CONFIG REQUIRED)
-    find_package(lapack-reference CONFIG REQUIRED)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo OpenBLAS::OpenBLAS lapack-reference::lapack-reference)
+    # Find lapack.lib installed by vcpkg
+    find_library(LAPACK_REF_LIB
+        NAMES lapack
+        PATHS
+            ${CMAKE_PREFIX_PATH}/lib
+            ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
+            $ENV{VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib
+        NO_DEFAULT_PATH)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo OpenBLAS::OpenBLAS)
+    if(LAPACK_REF_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${LAPACK_REF_LIB})
+        message(STATUS "Found and linked LAPACK reference library: ${LAPACK_REF_LIB}")
+    else()
+        message(WARNING "LAPACK reference library (lapack.lib) not found! LAPACK routines will be missing.")
+        message("")
+        message(WARNING "ACTION REQUIRED: LAPACK routines will not be available. To fix:")
+        message(WARNING "1. Ensure lapack-reference is listed in vcpkg.json for Windows.")
+        message(WARNING "2. Run: vcpkg install lapack-reference:x64-windows")
+        message(WARNING "3. Verify lapack.lib exists in one of these paths:")
+        message(WARNING "   - ${CMAKE_PREFIX_PATH}/lib")
+        message(WARNING "   - ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
+        message(WARNING "   - $ENV{VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib")
+        message(WARNING "4. If missing, check vcpkg logs and re-run install. If present, re-run CMake.")
+        message(WARNING "5. If you still see this message, please report the full CMake log and the contents of your vcpkg install directory.")
+        message("")
+    endif()
     # Debug output: show compile definitions and linked libraries
     get_target_property(_ldsctrlest_defs ${CMAKE_PROJECT_NAME} COMPILE_DEFINITIONS)
     message(STATUS "ldsctrlest compile definitions: ${_ldsctrlest_defs}")
     get_target_property(_ldsctrlest_libs ${CMAKE_PROJECT_NAME} LINK_LIBRARIES)
     message(STATUS "ldsctrlest linked libraries: ${_ldsctrlest_libs}")
-    # Diagnostics: print IMPORTED_LOCATION for both libraries
+    # Diagnostics: print IMPORTED_LOCATION for OpenBLAS
     if(OpenBLAS_FOUND)
         get_target_property(_openblas_lib OpenBLAS::OpenBLAS IMPORTED_LOCATION)
         message(STATUS "OpenBLAS::OpenBLAS IMPORTED_LOCATION: ${_openblas_lib}")
-    endif()
-    if(TARGET lapack-reference::lapack-reference)
-        get_target_property(_lapack_lib lapack-reference::lapack-reference IMPORTED_LOCATION)
-        message(STATUS "lapack-reference::lapack-reference IMPORTED_LOCATION: ${_lapack_lib}")
     endif()
 else()
     # Other platforms: Try vcpkg Linux-style paths
