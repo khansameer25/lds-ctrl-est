@@ -24,7 +24,7 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          # runVcpkgFormatString: "['install', '--triplet', '$[env.VCPKG_DEFAULT_TRIPLET]']"
+          runVcpkgFormatString: "['install', '--triplet', '$[env.VCPKG_DEFAULT_TRIPLET]']"
           runVcpkgInstall: true
 
       - name: Build wheels (macOS & Linux)
