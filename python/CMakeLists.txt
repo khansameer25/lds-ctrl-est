@@ -117,25 +117,34 @@ endif()
 # Use system libraries instead which are compatible with glibc 2.17
 if(DEFINED ENV{CIBW_LINUX})
     message(STATUS "Using system libraries for manylinux compatibility instead of vcpkg")
-    
     # Use system BLAS/LAPACK libraries that are compatible with manylinux2014
     find_library(OPENBLAS_LIB 
         NAMES openblas
         PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
         NO_DEFAULT_PATH)
-    
     find_library(LAPACK_REF_LIB 
         NAMES lapack
         PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
         NO_DEFAULT_PATH)
+elseif(WIN32)
+    # Windows: Use vcpkg install location and .lib extension
+    message(STATUS "Searching for OpenBLAS/LAPACK in vcpkg Windows paths")
+    set(VCPKG_LIB_PATH "${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
+    find_library(OPENBLAS_LIB 
+        NAMES openblas openblas.lib libopenblas
+        PATHS ${VCPKG_LIB_PATH}
+        NO_DEFAULT_PATH)
+    find_library(LAPACK_REF_LIB 
+        NAMES lapack lapack.lib liblapack
+        PATHS ${VCPKG_LIB_PATH}
+        NO_DEFAULT_PATH)
+    message(STATUS "Windows OpenBLAS found: ${OPENBLAS_LIB}")
+    message(STATUS "Windows LAPACK found: ${LAPACK_REF_LIB}")
 else()
-    # Try multiple paths to find vcpkg-installed libraries
-
-    # Debug: Show what CMAKE_PREFIX_PATH contains
+    # Other platforms: Try vcpkg Linux-style paths
     message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
     message(STATUS "vcpkg_INSTALLED_DIR: ${vcpkg_INSTALLED_DIR}")
     message(STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
-
     find_library(OPENBLAS_LIB 
         NAMES openblas libopenblas
         PATHS 
