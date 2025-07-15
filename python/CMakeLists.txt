@@ -120,7 +120,7 @@ if(WIN32 AND NOT DEFINED ENV{CIBW_LINUX})
     if(QUADMATH_LIB)
         target_link_libraries(${CMAKE_PROJECT_NAME} ${QUADMATH_LIB})
     endif()
-endif
+endif()
 
 # Link against the specific libraries that vcpkg installs
 # Based on the vcpkg output, we know it installs: openblas, lapack-reference
