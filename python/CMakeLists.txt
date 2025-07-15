@@ -127,21 +127,12 @@ if(DEFINED ENV{CIBW_LINUX})
         PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
         NO_DEFAULT_PATH)
 elseif(WIN32)
-    # Windows: Use vcpkg install location and .lib extension
-    message(STATUS "Searching for OpenBLAS/LAPACK in vcpkg Windows paths")
-    set(VCPKG_LIB_PATH "${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
-    file(GLOB VCPKG_LIB_FILES "${VCPKG_LIB_PATH}/*")
-    message(STATUS "Contents of vcpkg lib dir: ${VCPKG_LIB_FILES}")
-    find_library(OPENBLAS_LIB 
-        NAMES openblas openblas.lib libopenblas
-        PATHS ${VCPKG_LIB_PATH}
-        NO_DEFAULT_PATH)
-    find_library(LAPACK_REF_LIB 
-        NAMES lapack lapack.lib liblapack
-        PATHS ${VCPKG_LIB_PATH}
-        NO_DEFAULT_PATH)
-    message(STATUS "Windows OpenBLAS found: ${OPENBLAS_LIB}")
-    message(STATUS "Windows LAPACK found: ${LAPACK_REF_LIB}")
+    # Windows: Use vcpkg CMake targets for OpenBLAS and LAPACK
+    message(STATUS "Using vcpkg CMake targets for OpenBLAS and LAPACK on Windows")
+    find_package(OpenBLAS CONFIG REQUIRED)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OpenBLAS::OpenBLAS)
+    find_package(lapack-reference CONFIG REQUIRED)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE lapack-reference)
 else()
     # Other platforms: Try vcpkg Linux-style paths
     message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
