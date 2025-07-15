@@ -12,12 +12,14 @@ find_package(pybind11 REQUIRED)
 
 # Add source files and create the main shared library
 set(MAIN_PROJECT_DIR ${CMAKE_SOURCE_DIR}/..)
-include_directories(${MAIN_PROJECT_DIR}/include)
 file(GLOB_RECURSE LIB_SOURCES 
     ${MAIN_PROJECT_DIR}/src/*.cpp
     ${MAIN_PROJECT_DIR}/src-fit/*.cpp
 )
 add_library(${CMAKE_PROJECT_NAME} SHARED ${LIB_SOURCES})
+
+# Explicitly add the main project's include directory
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${MAIN_PROJECT_DIR}/include)
 
 # Set C++ standard and other properties
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
@@ -35,12 +37,12 @@ if(DEFINED ENV{CIBW_LINUX})
     message(STATUS "Using header-only Armadillo for manylinux compatibility.")
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ARMA_DONT_USE_BLAS ARMA_DONT_USE_LAPACK)
 
-# For Windows and macOS, we find and link Armadillo and its dependencies via vcpkg.
+# For Windows and macOS, find Armadillo via vcpkg, which handles all dependencies.
 else()
     message(STATUS "Finding Armadillo and its dependencies via vcpkg...")
     find_package(Armadillo REQUIRED)
-
-    # This restored logic correctly links Armadillo on all platforms
+    
+    # This robust logic correctly finds and links Armadillo on all platforms
     if(TARGET Armadillo::armadillo)
         message(STATUS "Linking against modern CMake target Armadillo::armadillo")
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Armadillo::armadillo)
@@ -48,7 +50,7 @@ else()
         message(STATUS "Linking against legacy CMake target 'armadillo'")
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo)
     else()
-        message(STATUS "Linking against Armadillo using legacy variables (include dirs and libraries)")
+        message(STATUS "Linking against Armadillo using legacy variables")
         target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${ARMADILLO_INCLUDE_DIRS})
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ARMADILLO_LIBRARIES})
     endif()
@@ -58,7 +60,7 @@ endif()
 add_subdirectory(carma)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE pybind11::module carma::carma)
 
-# Install the main library so the Python modules can find it
+# Install the main library
 install(TARGETS ${CMAKE_PROJECT_NAME}
     LIBRARY DESTINATION ldsctrlest
     RUNTIME DESTINATION ldsctrlest)
