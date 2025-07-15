@@ -130,7 +130,12 @@ elseif(WIN32)
     # Windows: Use vcpkg CMake target for OpenBLAS (provides LAPACK)
     message(STATUS "Using vcpkg CMake target for OpenBLAS on Windows (provides LAPACK)")
     find_package(OpenBLAS CONFIG REQUIRED)
-    target_link_libraries(${CMAKE_PROJECT_NAME} OpenBLAS::OpenBLAS)
+    target_link_libraries(${CMAKE_PROJECT_NAME} OpenBLAS::OpenBLAS OpenBLAS::LAPACK)
+    # Debug output: show compile definitions and linked libraries
+    get_target_property(_ldsctrlest_defs ${CMAKE_PROJECT_NAME} COMPILE_DEFINITIONS)
+    message(STATUS "ldsctrlest compile definitions: ${_ldsctrlest_defs}")
+    get_target_property(_ldsctrlest_libs ${CMAKE_PROJECT_NAME} LINK_LIBRARIES)
+    message(STATUS "ldsctrlest linked libraries: ${_ldsctrlest_libs}")
 else()
     # Other platforms: Try vcpkg Linux-style paths
     message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
