@@ -112,12 +112,15 @@ else()
 endif()
 
 if(WIN32 AND NOT DEFINED ENV{CIBW_LINUX})
-    # On Windows, vcpkg's Fortran-based libraries (like OpenBLAS) require
-    # manually linking the gfortran runtime libraries. This fixes the
-    # "cannot open input file 'gfortran.lib'" error.
-    message(STATUS "Adding gfortran and quadmath linker dependencies for Windows.")
-    target_link_libraries(${CMAKE_PROJECT_NAME} gfortran quadmath)
-endif()
+    find_library(GFORTRAN_LIB gfortran)
+    find_library(QUADMATH_LIB quadmath)
+    if(GFORTRAN_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${GFORTRAN_LIB})
+    endif()
+    if(QUADMATH_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${QUADMATH_LIB})
+    endif()
+endif
 
 # Link against the specific libraries that vcpkg installs
 # Based on the vcpkg output, we know it installs: openblas, lapack-reference
@@ -243,8 +246,8 @@ if(NOT DEFINED ENV{CIBW_LINUX})
         else()
             message(STATUS "gfortran library not found")
             # Try to link by name if not found by path
-            target_link_libraries(${CMAKE_PROJECT_NAME} gfortran)
-            message(STATUS "Attempting to link gfortran by name")
+            # target_link_libraries(${CMAKE_PROJECT_NAME} gfortran)
+            # message(STATUS "Attempting to link gfortran by name")
         endif()
 
         if(QUADMATH_LIB)
@@ -253,8 +256,8 @@ if(NOT DEFINED ENV{CIBW_LINUX})
         else()
             message(STATUS "quadmath library not found")
             # Try to link by name if not found by path
-            target_link_libraries(${CMAKE_PROJECT_NAME} quadmath)
-            message(STATUS "Attempting to link quadmath by name")
+            # target_link_libraries(${CMAKE_PROJECT_NAME} quadmath)
+            # message(STATUS "Attempting to link quadmath by name")
         endif()
     endif()
 else()
