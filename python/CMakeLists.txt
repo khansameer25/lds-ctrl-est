@@ -28,17 +28,30 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
+# --- Dependency Linking ---
+
 # For manylinux, we use a header-only version of Armadillo to avoid library issues.
 if(DEFINED ENV{CIBW_LINUX})
     message(STATUS "Using header-only Armadillo for manylinux compatibility.")
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ARMA_DONT_USE_BLAS ARMA_DONT_USE_LAPACK)
 
-# For Windows and macOS, we find Armadillo via vcpkg, which handles all dependencies.
+# For Windows and macOS, we find and link Armadillo and its dependencies via vcpkg.
 else()
     message(STATUS "Finding Armadillo and its dependencies via vcpkg...")
     find_package(Armadillo REQUIRED)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Armadillo::armadillo)
-    message(STATUS "Found and linked Armadillo. vcpkg will handle its dependencies.")
+
+    # This restored logic correctly links Armadillo on all platforms
+    if(TARGET Armadillo::armadillo)
+        message(STATUS "Linking against modern CMake target Armadillo::armadillo")
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Armadillo::armadillo)
+    elseif(TARGET armadillo)
+        message(STATUS "Linking against legacy CMake target 'armadillo'")
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo)
+    else()
+        message(STATUS "Linking against Armadillo using legacy variables (include dirs and libraries)")
+        target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${ARMADILLO_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ARMADILLO_LIBRARIES})
+    endif()
 endif()
 
 # Link against pybind11 and carma
