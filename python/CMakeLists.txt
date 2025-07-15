@@ -1,69 +1,73 @@
 cmake_minimum_required(VERSION 3.16)
 project(ldsctrlest VERSION 0.9.0 LANGUAGES CXX C)
 
-# --- Standard Setup ---
-# This part is the same as your original file.
+# Set up paths relative to main project
 set(MAIN_PROJECT_DIR ${CMAKE_SOURCE_DIR}/..)
+set(CMAKE_MODULE_PATH ${MAIN_PROJECT_DIR}/cmake/Modules ${CMAKE_MODULE_PATH})
 
+# If vcpkg toolchain is available, use it
 if(DEFINED CMAKE_TOOLCHAIN_FILE)
     message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
 endif()
 
+# Find Python3 with NumPy (required for carma)
 find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+
+# Find pybind11
 find_package(pybind11 REQUIRED)
+
+# Add carma as subdirectory (header-only library)
 add_subdirectory(carma)
 
-# --- Library Definition ---
-# Defines the main ldsctrlest shared library.
-file(GLOB_RECURSE LIB_SOURCES
+# Include directories from main project
+include_directories(${MAIN_PROJECT_DIR}/include)
+
+# Add the source files to build the main library
+file(GLOB_RECURSE LIB_SOURCES 
     ${MAIN_PROJECT_DIR}/src/*.cpp
     ${MAIN_PROJECT_DIR}/src-fit/*.cpp
 )
+
+# Create the main library
 add_library(${CMAKE_PROJECT_NAME} SHARED ${LIB_SOURCES})
-set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+
+# Set C++14 standard (required for the project)
+set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 
-# --- Include Directories ---
-# Explicitly add all necessary include directories to the library target.
-# Using PUBLIC ensures that any other target linking against this one (like the
-# python modules) will also inherit these include paths.
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-    ${MAIN_PROJECT_DIR}/include
-    ${Python3_INCLUDE_DIRS}
-    ${pybind11_INCLUDE_DIRS}
-)
+# Find dependencies using vcpkg or system
+find_package(PkgConfig QUIET)
 
-# --- Platform-Specific Dependencies ---
-# This is the core of the fix. We handle each OS completely separately.
-
-if(DEFINED ENV{CIBW_LINUX})
-    # For manylinux, we compile Armadillo as header-only to maximize compatibility.
-    message(STATUS "Configuring for manylinux with header-only Armadillo.")
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ARMA_DONT_USE_BLAS ARMA_DONT_USE_LAPACK)
-
-elseif(APPLE)
-    # For macOS, vcpkg provides Armadillo, and we link against Apple's native
-    # high-performance Accelerate framework for BLAS/LAPACK.
-    message(STATUS "Configuring for macOS: Using vcpkg Armadillo + Accelerate.framework.")
-    find_package(Armadillo REQUIRED)
-    find_library(ACCELERATE_FRAMEWORK Accelerate REQUIRED)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC Armadillo::armadillo)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ACCELERATE_FRAMEWORK})
-
-elseif(WIN32)
-    # For Windows, we let vcpkg handle everything. It provides Armadillo and its
-    # dependencies (like OpenBLAS). We just need to add the gfortran runtime libs.
-    message(STATUS "Configuring for Windows: Using vcpkg for Armadillo.")
-    find_package(Armadillo REQUIRED)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC Armadillo::armadillo)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE gfortran quadmath)
+# Find Armadillo using vcpkg-compatible method
+find_package(Armadillo REQUIRED)
+if(Armadillo_FOUND OR ARMADILLO_FOUND)
+    if(TARGET armadillo)
+        target_link_libraries(${CMAKE_PROJECT_NAME} armadillo)
+    else()
+        include_directories(${ARMADILLO_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${ARMADILLO_LIBRARIES})
+    endif()
+    message(STATUS "Found Armadillo")
 endif()
 
-# Link other dependencies common to all platforms.
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE carma::carma pybind11::module)
+# Find carma for Armadillo-NumPy conversion (already added as subdirectory)
+# carma target should be available from add_subdirectory above
+target_link_libraries(${CMAKE_PROJECT_NAME} carma::carma)
+message(STATUS "Using carma from submodule")
 
-# --- Installation and Subdirectory ---
-# This part is the same as your original file.
+# Find HDF5 using vcpkg-compatible method
+find_package(HDF5 QUIET COMPONENTS C)
+if(HDF5_FOUND)
+    if(TARGET hdf5::hdf5)
+        target_link_libraries(${CMAKE_PROJECT_NAME} hdf5::hdf5)
+    else()
+        include_directories(${HDF5_INCLUDE_DIRS})
+        target_link_libraries(${CMAKE_PROJECT_NAME} ${HDF5_LIBRARIES})
+    endif()
+    message(STATUS "Found HDF5")
+endif()
+
+# Install the main library so it can be found by the Python modules
 install(TARGETS ${CMAKE_PROJECT_NAME}
     LIBRARY DESTINATION ldsctrlest
     RUNTIME DESTINATION ldsctrlest)
