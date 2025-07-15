@@ -9,7 +9,10 @@
     },
     {
       "name": "openblas",
-      "features": ["lapack"],
+      "platform": "windows"
+    },
+    {
+      "name": "lapack-reference",
       "platform": "windows"
     },
     {
