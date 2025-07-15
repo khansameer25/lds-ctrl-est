@@ -26,6 +26,7 @@ jobs:
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
           runVcpkgFormatString: "['install', '--triplet', '$[env.VCPKG_DEFAULT_TRIPLET]']"
           runVcpkgInstall: true
+          doNotCache: false
 
       - name: Build wheels (macOS & Linux)
         if: runner.os != 'Windows'

@@ -130,6 +130,8 @@ elseif(WIN32)
     # Windows: Use vcpkg install location and .lib extension
     message(STATUS "Searching for OpenBLAS/LAPACK in vcpkg Windows paths")
     set(VCPKG_LIB_PATH "${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
+    file(GLOB VCPKG_LIB_FILES "${VCPKG_LIB_PATH}/*")
+    message(STATUS "Contents of vcpkg lib dir: ${VCPKG_LIB_FILES}")
     find_library(OPENBLAS_LIB 
         NAMES openblas openblas.lib libopenblas
         PATHS ${VCPKG_LIB_PATH}
