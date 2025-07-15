@@ -7,6 +7,14 @@
       "name": "hdf5",
       "features": ["zlib"]
     },
-    { "name": "openblas", "features": ["lapack"] }
+    {
+      "name": "openblas",
+      "features": ["lapack"],
+      "platform": "windows"
+    },
+    {
+      "name": "openblas",
+      "platform": "!windows"
+    }
   ]
 }
