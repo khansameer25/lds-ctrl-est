@@ -135,10 +135,13 @@ if(DEFINED ENV{CIBW_LINUX})
         PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
         NO_DEFAULT_PATH)
 elseif(WIN32)
-    # Windows: Use vcpkg CMake target for OpenBLAS (BLAS) and manually find lapack.lib (LAPACK)
-    message(STATUS "Using vcpkg CMake target for OpenBLAS and manually linking lapack.lib for LAPACK on Windows")
+    # Windows: Use vcpkg CMake targets for OpenBLAS and LAPACK
+    message(STATUS "Using vcpkg CMake targets for OpenBLAS and LAPACK on Windows")
     find_package(OpenBLAS CONFIG REQUIRED)
-    # Find lapack.lib installed by vcpkg
+    find_package(lapack CONFIG REQUIRED)
+    # Always link both OpenBLAS and LAPACK explicitly
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo OpenBLAS::OpenBLAS lapack)
+    # Fallback: also try to find lapack.lib directly if needed
     find_library(LAPACK_REF_LIB
         NAMES lapack
         PATHS
@@ -146,24 +149,11 @@ elseif(WIN32)
             ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
             $ENV{VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib
         NO_DEFAULT_PATH)
-    # All Windows target_link_libraries must use keyword signature
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo OpenBLAS::OpenBLAS)
     if(LAPACK_REF_LIB)
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${LAPACK_REF_LIB})
         message(STATUS "Found and linked LAPACK reference library: ${LAPACK_REF_LIB}")
     else()
-        message(WARNING "LAPACK reference library (lapack.lib) not found! LAPACK routines will be missing.")
-        message("")
-        message(WARNING "ACTION REQUIRED: LAPACK routines will not be available. To fix:")
-        message(WARNING "1. Ensure lapack-reference is listed in vcpkg.json for Windows.")
-        message(WARNING "2. Run: vcpkg install lapack-reference:x64-windows")
-        message(WARNING "3. Verify lapack.lib exists in one of these paths:")
-        message(WARNING "   - ${CMAKE_PREFIX_PATH}/lib")
-        message(WARNING "   - ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
-        message(WARNING "   - $ENV{VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib")
-        message(WARNING "4. If missing, check vcpkg logs and re-run install. If present, re-run CMake.")
-        message(WARNING "5. If you still see this message, please report the full CMake log and the contents of your vcpkg install directory.")
-        message("")
+        message(WARNING "LAPACK reference library (lapack.lib) not found by find_library. Relying on lapack CMake target from vcpkg.")
     endif()
     # Debug output: show compile definitions and linked libraries
     get_target_property(_ldsctrlest_defs ${CMAKE_PROJECT_NAME} COMPILE_DEFINITIONS)
