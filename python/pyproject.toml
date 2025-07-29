@@ -20,11 +20,8 @@ cmake.define = { CMAKE_CXX_STANDARD = "17" }
 
 [tool.cibuildwheel]
 skip = "pp* *-musllinux_*"
-test-command = """
-echo "=== Testing wheel import on $(python --version) ==="
-python -c "import ldsctrlest; print('✅ ldsctrlest import successful!')"
-python -c "import ldsctrlest; import numpy as np; print('✅ NumPy integration successful!')"
-"""
+test-command = "pytest -v {project}/python/tests"
+test-requires = ["pytest", "matplotlib"]
 
 # == Linux ==
 [tool.cibuildwheel.linux]

@@ -2,9 +2,9 @@ name: Build Python Wheels
 
 on:
   push:
-    branches: [test]
+    branches: [final]
   pull_request:
-    branches: [test]
+    branches: [final]
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -29,21 +29,12 @@ jobs:
           doNotCache: false
 
       - name: Build wheels (macOS & Linux)
-        if: runner.os != 'Windows'
         uses: pypa/cibuildwheel@v2.16.2
         with:
           package-dir: python
           only: ${{ (matrix.os == 'macos-latest' && 'cp312-macosx_arm64') || 'cp312-manylinux_x86_64' }}
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}
-
-      - name: Build wheels (Windows)
-        if: runner.os == 'Windows'
-        run: pipx run cibuildwheel --output-dir wheelhouse --only cp312-win_amd64 python
-        env:
-          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-          CMAKE_PREFIX_PATH: ${{ github.workspace }}/vcpkg_installed/x64-windows
-          LDSCTRLEST_BUILD_PYTHON: ON
 
       - uses: actions/upload-artifact@v4
         with:
