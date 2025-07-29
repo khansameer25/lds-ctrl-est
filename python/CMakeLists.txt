@@ -72,29 +72,17 @@ find_package(PkgConfig QUIET)
 
 # Find Armadillo using vcpkg-compatible method or system libraries
 if(DEFINED ENV{CIBW_LINUX})
-    # For manylinux compatibility, try to use system Armadillo if available
-    # But first check if we should force header-only mode for maximum compatibility
-    message(STATUS "Configuring Armadillo for manylinux compatibility")
-    
-    # Force header-only mode to avoid any external library dependencies
-    message(STATUS "Using header-only Armadillo for maximum manylinux compatibility")
-    add_compile_definitions(ARMA_DONT_USE_BLAS)
-    add_compile_definitions(ARMA_DONT_USE_LAPACK)
-    add_compile_definitions(ARMA_DONT_USE_HDF5)
-    add_compile_definitions(ARMA_DONT_USE_WRAPPER)
-    
+    # For manylinux compatibility, use system Armadillo and enable BLAS/LAPACK
+    message(STATUS "Configuring Armadillo for manylinux compatibility with BLAS/LAPACK enabled")
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
         pkg_check_modules(ARMADILLO armadillo)
         if(ARMADILLO_FOUND)
-            # Only use include directories, not libraries for header-only mode
             target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${ARMADILLO_INCLUDE_DIRS})
-            message(STATUS "Found system Armadillo via pkgconfig (header-only mode)")
+            message(STATUS "Found system Armadillo via pkgconfig")
         endif()
     endif()
-    
-    # Note: We don't link any Armadillo libraries in manylinux mode
-    message(STATUS "Armadillo configured for header-only mode")
+    # Link against system BLAS/LAPACK if found
 else()
     # Use vcpkg version for non-manylinux builds
     find_package(Armadillo REQUIRED)
