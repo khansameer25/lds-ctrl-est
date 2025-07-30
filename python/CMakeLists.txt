@@ -44,7 +44,7 @@ add_subdirectory(carma)
 include_directories(${MAIN_PROJECT_DIR}/include)
 
 # Add the source files to build the main library
-file(GLOB_RECURSE LIB_SOURCES 
+file(GLOB_RECURSE LIB_SOURCES
     ${MAIN_PROJECT_DIR}/src/*.cpp
     ${MAIN_PROJECT_DIR}/src-fit/*.cpp
 )
@@ -82,249 +82,98 @@ if(DEFINED ENV{CIBW_LINUX})
             message(STATUS "Found system Armadillo via pkgconfig")
         endif()
     endif()
-    # Link against system BLAS/LAPACK if found
 else()
     # Use vcpkg version for non-manylinux builds
     find_package(Armadillo REQUIRED)
     if(Armadillo_FOUND OR ARMADILLO_FOUND)
         if(TARGET armadillo)
-            if(WIN32)
-                target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo)
-            else()
-                target_link_libraries(${CMAKE_PROJECT_NAME} armadillo)
-            endif()
+            target_link_libraries(${CMAKE_PROJECT_NAME} armadillo)
             message(STATUS "Found Armadillo target")
         else()
             include_directories(${ARMADILLO_INCLUDE_DIRS})
-            if(WIN32)
-                target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ARMADILLO_LIBRARIES})
-            else()
-                target_link_libraries(${CMAKE_PROJECT_NAME} ${ARMADILLO_LIBRARIES})
-            endif()
+            target_link_libraries(${CMAKE_PROJECT_NAME} ${ARMADILLO_LIBRARIES})
             message(STATUS "Found Armadillo libraries: ${ARMADILLO_LIBRARIES}")
         endif()
         message(STATUS "Found Armadillo")
     endif()
 endif()
 
-# Link against the specific libraries that vcpkg installs
-# Based on the vcpkg output, we know it installs: openblas, lapack-reference
-# For manylinux compatibility, avoid vcpkg static libraries that contain C23 symbols
-# Use system libraries instead which are compatible with glibc 2.17
+# --- START OF MINIMAL CHANGE ---
+# This block now handles finding and linking BLAS/LAPACK differently for each platform.
 if(DEFINED ENV{CIBW_LINUX})
-    message(STATUS "Using system libraries for manylinux compatibility instead of vcpkg")
-    # Use system BLAS/LAPACK libraries that are compatible with manylinux2014
-    find_library(OPENBLAS_LIB 
-        NAMES openblas
-        PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
-        NO_DEFAULT_PATH)
-    find_library(LAPACK_REF_LIB 
-        NAMES lapack
-        PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu
-        NO_DEFAULT_PATH)
-elseif(WIN32)
-    # Windows: Use vcpkg CMake targets for OpenBLAS and LAPACK
-    message(STATUS "Using vcpkg CMake targets for OpenBLAS and LAPACK on Windows")
-    find_package(OpenBLAS CONFIG REQUIRED)
-    find_package(lapack CONFIG REQUIRED)
-    # Always link both OpenBLAS and LAPACK explicitly
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE armadillo OpenBLAS::OpenBLAS lapack)
-    # Fallback: also try to find lapack.lib directly if needed
-    find_library(LAPACK_REF_LIB
-        NAMES lapack
+    # For manylinux, find and link system BLAS/LAPACK.
+    # This is more reliable than find_library and will fail loudly if libraries are missing.
+    message(STATUS "Finding and linking system BLAS and LAPACK for manylinux...")
+    find_package(BLAS REQUIRED)
+    find_package(LAPACK REQUIRED)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+else()
+    # Other platforms (macOS): use original find_library logic.
+    message(STATUS "Finding libraries for non-manylinux platform (e.g., macOS)...")
+    find_library(OPENBLAS_LIB
+        NAMES openblas libopenblas
         PATHS
             ${CMAKE_PREFIX_PATH}/lib
             ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
-            $ENV{VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib
+            /project/vcpkg_installed/x64-linux/lib
         NO_DEFAULT_PATH)
+    find_library(LAPACK_REF_LIB
+        NAMES lapack liblapack
+        PATHS
+            ${CMAKE_PREFIX_PATH}/lib
+            ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
+            /project/vcpkg_installed/x64-linux/lib
+        NO_DEFAULT_PATH)
+    if(OPENBLAS_LIB)
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${OPENBLAS_LIB})
+        message(STATUS "Found and linked OpenBLAS library: ${OPENBLAS_LIB}")
+    endif()
     if(LAPACK_REF_LIB)
         target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${LAPACK_REF_LIB})
         message(STATUS "Found and linked LAPACK reference library: ${LAPACK_REF_LIB}")
-    else()
-        message(WARNING "LAPACK reference library (lapack.lib) not found by find_library. Relying on lapack CMake target from vcpkg.")
-    endif()
-    # Debug output: show compile definitions and linked libraries
-    get_target_property(_ldsctrlest_defs ${CMAKE_PROJECT_NAME} COMPILE_DEFINITIONS)
-    message(STATUS "ldsctrlest compile definitions: ${_ldsctrlest_defs}")
-    get_target_property(_ldsctrlest_libs ${CMAKE_PROJECT_NAME} LINK_LIBRARIES)
-    message(STATUS "ldsctrlest linked libraries: ${_ldsctrlest_libs}")
-    # Diagnostics: print IMPORTED_LOCATION for OpenBLAS
-    if(OpenBLAS_FOUND)
-        get_target_property(_openblas_lib OpenBLAS::OpenBLAS IMPORTED_LOCATION)
-        message(STATUS "OpenBLAS::OpenBLAS IMPORTED_LOCATION: ${_openblas_lib}")
-    endif()
-else()
-    # Other platforms: Try vcpkg Linux-style paths
-    message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-    message(STATUS "vcpkg_INSTALLED_DIR: ${vcpkg_INSTALLED_DIR}")
-    message(STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
-    find_library(OPENBLAS_LIB 
-        NAMES openblas libopenblas
-        PATHS 
-            ${CMAKE_PREFIX_PATH}/lib
-            ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
-            /project/vcpkg_installed/x64-linux/lib
-        NO_DEFAULT_PATH)
-    find_library(LAPACK_REF_LIB 
-        NAMES lapack liblapack
-        PATHS 
-            ${CMAKE_PREFIX_PATH}/lib
-            ${vcpkg_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib
-            /project/vcpkg_installed/x64-linux/lib
-        NO_DEFAULT_PATH)
-endif()
-
-# Search for gfortran in multiple possible locations, prioritizing system paths
-# Skip gfortran for manylinux to avoid C23 symbol issues
-
-# Only search for and link gfortran/quadmath on Unix-like systems (not Windows)
-if(NOT DEFINED ENV{CIBW_LINUX} AND NOT WIN32)
-    find_library(GFORTRAN_LIB 
-        NAMES gfortran libgfortran
-        PATHS 
-            /usr/lib64
-            /lib64
-            /usr/lib/x86_64-linux-gnu
-            /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
-            /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
-            /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
-            /usr/lib/gcc/x86_64-linux-gnu/10
-            /usr/lib/gcc/x86_64-linux-gnu/11
-            /usr/lib/gcc/x86_64-linux-gnu/9
-        NO_DEFAULT_PATH)
-
-    # Also look for libquadmath which is often needed with gfortran
-    find_library(QUADMATH_LIB 
-        NAMES quadmath libquadmath
-        PATHS 
-            /usr/lib64
-            /lib64
-            /usr/lib/x86_64-linux-gnu
-            /opt/rh/devtoolset-10/root/usr/lib/gcc/x86_64-redhat-linux/10
-            /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
-            /opt/rh/devtoolset-9/root/usr/lib/gcc/x86_64-redhat-linux/9
-            /usr/lib/gcc/x86_64-linux-gnu/10
-            /usr/lib/gcc/x86_64-linux-gnu/11
-            /usr/lib/gcc/x86_64-linux-gnu/9
-        NO_DEFAULT_PATH)
-else()
-    message(STATUS "Skipping gfortran/quadmath for Windows or manylinux compatibility")
-endif()
-
-if(NOT WIN32)
-    message(STATUS "Library search results:")
-    if(OPENBLAS_LIB)
-        target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENBLAS_LIB})
-        message(STATUS "Found and linked OpenBLAS library: ${OPENBLAS_LIB}")
-    else()
-        message(STATUS "OpenBLAS library not found")
     endif()
 
-    if(LAPACK_REF_LIB)
-        target_link_libraries(${CMAKE_PROJECT_NAME} ${LAPACK_REF_LIB})
-        message(STATUS "Found and linked LAPACK reference library: ${LAPACK_REF_LIB}")
-    else()
-        message(STATUS "LAPACK reference library not found")
-    endif()
-endif()
-
-# For manylinux builds, if no external BLAS/LAPACK found, force header-only mode
-if(DEFINED ENV{CIBW_LINUX})
-    if(NOT OPENBLAS_LIB AND NOT LAPACK_REF_LIB)
-        message(STATUS "No external BLAS/LAPACK found for manylinux build - using header-only Armadillo")
-        # Force header-only mode by unsetting any BLAS detection
-        set(ARMA_USE_BLAS FALSE)
-        set(ARMA_USE_LAPACK FALSE)
-        add_compile_definitions(ARMA_DONT_USE_BLAS)
-        add_compile_definitions(ARMA_DONT_USE_LAPACK)
-        add_compile_definitions(ARMA_DONT_USE_HDF5)
-        message(STATUS "Configured Armadillo for header-only mode")
-    endif()
-endif()
-
-
-# Link Fortran runtime libraries only on Unix-like systems (not Windows)
-if(NOT DEFINED ENV{CIBW_LINUX} AND NOT WIN32)
     if(APPLE)
-        # macOS: Use Accelerate framework instead of gfortran
+        # macOS: Use Accelerate framework
         find_library(ACCELERATE_FRAMEWORK Accelerate)
         if(ACCELERATE_FRAMEWORK)
-            target_link_libraries(${CMAKE_PROJECT_NAME} ${ACCELERATE_FRAMEWORK})
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${ACCELERATE_FRAMEWORK})
             message(STATUS "Found and linked Accelerate framework: ${ACCELERATE_FRAMEWORK}")
-        else()
-            message(STATUS "Accelerate framework not found")
-        endif()
-    else()
-        # Non-macOS Unix platforms: try gfortran/quadmath
-        if(GFORTRAN_LIB)
-            target_link_libraries(${CMAKE_PROJECT_NAME} ${GFORTRAN_LIB})
-            message(STATUS "Found and linked gfortran library: ${GFORTRAN_LIB}")
-        else()
-            message(STATUS "gfortran library not found; not linking gfortran")
-        endif()
-
-        if(QUADMATH_LIB)
-            target_link_libraries(${CMAKE_PROJECT_NAME} ${QUADMATH_LIB})
-            message(STATUS "Found and linked quadmath library: ${QUADMATH_LIB}")
-        else()
-            message(STATUS "quadmath library not found; not linking quadmath")
         endif()
     endif()
-else()
-    message(STATUS "Skipping gfortran and quadmath for Windows or manylinux compatibility")
 endif()
+# --- END OF MINIMAL CHANGE ---
 
-# Also link pthread and math libraries which are often needed
-
+# Link pthread and math libraries which are often needed
 find_library(PTHREAD_LIB pthread)
 if(PTHREAD_LIB)
-    target_link_libraries(${CMAKE_PROJECT_NAME} ${PTHREAD_LIB})
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${PTHREAD_LIB})
 endif()
-# Only link math library 'm' on Unix-like systems (not Windows)
-if(NOT WIN32)
-    target_link_libraries(${CMAKE_PROJECT_NAME} m)
-endif()
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE m)
 
 # Minimal manylinux compatibility settings
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
     message(STATUS "Configuring for manylinux compatibility with GCC 10 fixes")
-    
-    # Add compiler flags to work around GCC 10 + pybind11 static_assert issues
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
         -Wno-deprecated-declarations
         -DPYBIND11_DETAILED_ERROR_MESSAGES
     )
-    
     message(STATUS "Applied manylinux compatibility settings with GCC 10 fixes")
 endif()
 
-# Find carma for Armadillo-NumPy conversion (already added as subdirectory)
-# carma target should be available from add_subdirectory above
-if(WIN32)
-    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE carma::carma)
-else()
-    target_link_libraries(${CMAKE_PROJECT_NAME} carma::carma)
-endif()
+# Find carma for Armadillo-NumPy conversion
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE carma::carma)
 message(STATUS "Using carma from submodule")
 
-# Find HDF5 using vcpkg-compatible method (temporarily disabled for manylinux compatibility)
-# The __isoc23_strtol symbol from newer glibc is causing issues in manylinux
+# Find HDF5 using vcpkg-compatible method (disabled for manylinux compatibility)
 if(NOT DEFINED ENV{CIBW_LINUX})
     find_package(HDF5 QUIET COMPONENTS C)
     if(HDF5_FOUND)
         if(TARGET hdf5::hdf5)
-            if(WIN32)
-                target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE hdf5::hdf5)
-            else()
-                target_link_libraries(${CMAKE_PROJECT_NAME} hdf5::hdf5)
-            endif()
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE hdf5::hdf5)
         else()
             include_directories(${HDF5_INCLUDE_DIRS})
-            if(WIN32)
-                target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${HDF5_LIBRARIES})
-            else()
-                target_link_libraries(${CMAKE_PROJECT_NAME} ${HDF5_LIBRARIES})
-            endif()
+            target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${HDF5_LIBRARIES})
         endif()
         message(STATUS "Found HDF5")
     endif()
