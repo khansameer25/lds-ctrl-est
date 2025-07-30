@@ -40,6 +40,9 @@ find_package(pybind11 REQUIRED)
 # Add carma as subdirectory (header-only library)
 add_subdirectory(carma)
 
+include_directories(${Armadillo_INCLUDE_DIRS})
+include_directories(carma/include)
+
 # Include directories from main project
 include_directories(${MAIN_PROJECT_DIR}/include)
 
