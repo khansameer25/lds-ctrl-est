@@ -27,7 +27,7 @@ test-requires = ["pytest", "matplotlib"]
 [tool.cibuildwheel.linux]
 archs = ["x86_64"]
 manylinux-x86_64-image = "manylinux_2_28"
-before-build = "yum install -y openblas-devel lapack-devel"
+before-build = "yum install -y --nogpgcheck openblas-devel lapack-devel"
 before-all = """
 echo "=== Setting up manylinux2014 build environment ==="
 if [ -f /opt/rh/devtoolset-10/enable ]; then
