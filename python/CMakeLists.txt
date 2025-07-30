@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-project(ldsctrlest VERSION 0.9.0 LANGUAGES CXX C Fortran)
+# Remove 'Fortran' from this line
+project(ldsctrlest VERSION 0.9.0 LANGUAGES CXX C)
 
 # Set up paths relative to main project
 set(MAIN_PROJECT_DIR ${CMAKE_SOURCE_DIR}/..)
@@ -10,18 +11,13 @@ if(DEFINED CMAKE_TOOLCHAIN_FILE)
     message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
 endif()
 
-# --- START OF FIX ---
 # Find Python3 differently for manylinux vs. other platforms
 if(DEFINED ENV{CIBW_LINUX})
-    # For manylinux, don't request Development components, as they are not
-    # always available. Trust the paths from cibuildwheel's env vars.
     message(STATUS "manylinux: Finding Python without Development components.")
     find_package(Python3 COMPONENTS Interpreter NumPy REQUIRED)
 else()
-    # For other platforms like macOS, find the full development components.
     find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 endif()
-# --- END OF FIX ---
 
 # Find other dependencies
 find_package(pybind11 REQUIRED)
@@ -43,7 +39,7 @@ file(GLOB_RECURSE LIB_SOURCES
 # Create the main library
 add_library(${CMAKE_PROJECT_NAME} SHARED ${LIB_SOURCES})
 
-# Set C++ standard conditionally - C++17 for Linux manylinux, C++14 for macOS
+# Set C++ standard conditionally
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
     set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 else()
@@ -58,7 +54,7 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
-# Add Armadillo dependency robustly, handling both modern target and legacy variable methods
+# Add Armadillo dependency robustly
 if(TARGET Armadillo::armadillo)
     target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC Armadillo::armadillo)
 else()
@@ -78,6 +74,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 # Platform-specific linking
 if(DEFINED ENV{CIBW_LINUX})
     message(STATUS "Finding and linking system BLAS and LAPACK for manylinux...")
+    # Add this line to enable Fortran only for this block
+    enable_language(Fortran)
     find_package(BLAS REQUIRED)
     find_package(LAPACK REQUIRED)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
@@ -101,11 +99,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
     message(STATUS "Applied manylinux compatibility settings with GCC 10 fixes")
 endif()
 
-# Install the main library so it can be found by the Python modules
+# Install the main library
 install(TARGETS ${CMAKE_PROJECT_NAME}
     LIBRARY DESTINATION ldsctrlest
     RUNTIME DESTINATION ldsctrlest)
 
-# Add the subdirectory that defines the pybind11 modules.
-# It will now correctly inherit the PUBLIC include directories from the main library.
+# Add the subdirectory that defines the pybind11 modules
 add_subdirectory(ldsctrlest)
