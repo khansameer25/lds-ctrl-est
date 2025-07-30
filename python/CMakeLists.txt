@@ -46,15 +46,23 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
-
 # --- START OF FIX ---
-# Consolidate all linking into a single, modern block.
-# Use PUBLIC for dependencies whose headers are included in our own public headers.
+# Consolidate linking into a single, modern block.
+
+# Add Armadillo dependency robustly, handling both modern target and legacy variable methods
+if(TARGET Armadillo::armadillo)
+    # Modern CMake: link the imported target
+    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC Armadillo::armadillo)
+else()
+    # Legacy CMake: link the variables and include directories manually
+    target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${ARMADILLO_INCLUDE_DIRS})
+    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${ARMADILLO_LIBRARIES})
+endif()
+
+# Link other public and private dependencies
 target_link_libraries(${CMAKE_PROJECT_NAME}
     PUBLIC
-        # Armadillo and carma are used in our headers, so they must be PUBLIC.
-        # This propagates their include directories to the Python extension modules.
-        Armadillo::armadillo
+        # carma is used in our headers, so it must be PUBLIC.
         carma::carma
     PRIVATE
         # These are implementation details
