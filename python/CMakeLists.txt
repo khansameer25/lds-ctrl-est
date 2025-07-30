@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(ldsctrlest VERSION 0.9.0 LANGUAGES CXX C)
+project(ldsctrlest VERSION 0.9.0 LANGUAGES CXX C Fortran)
 
 # Set up paths relative to main project
 set(MAIN_PROJECT_DIR ${CMAKE_SOURCE_DIR}/..)
