@@ -10,8 +10,20 @@ if(DEFINED CMAKE_TOOLCHAIN_FILE)
     message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
 endif()
 
-# Find all dependencies first
-find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+# --- START OF FIX ---
+# Find Python3 differently for manylinux vs. other platforms
+if(DEFINED ENV{CIBW_LINUX})
+    # For manylinux, don't request Development components, as they are not
+    # always available. Trust the paths from cibuildwheel's env vars.
+    message(STATUS "manylinux: Finding Python without Development components.")
+    find_package(Python3 COMPONENTS Interpreter NumPy REQUIRED)
+else()
+    # For other platforms like macOS, find the full development components.
+    find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+endif()
+# --- END OF FIX ---
+
+# Find other dependencies
 find_package(pybind11 REQUIRED)
 find_package(Armadillo REQUIRED)
 find_package(HDF5 QUIET COMPONENTS C)
@@ -39,22 +51,17 @@ else()
 endif()
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 
-# Set shared library properties for better auditwheel compatibility
+# Set shared library properties
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
     POSITION_INDEPENDENT_CODE ON
 )
 
-# --- START OF FIX ---
-# Consolidate linking into a single, modern block.
-
 # Add Armadillo dependency robustly, handling both modern target and legacy variable methods
 if(TARGET Armadillo::armadillo)
-    # Modern CMake: link the imported target
     target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC Armadillo::armadillo)
 else()
-    # Legacy CMake: link the variables and include directories manually
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${ARMADILLO_INCLUDE_DIRS})
     target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${ARMADILLO_LIBRARIES})
 endif()
@@ -62,23 +69,19 @@ endif()
 # Link other public and private dependencies
 target_link_libraries(${CMAKE_PROJECT_NAME}
     PUBLIC
-        # carma is used in our headers, so it must be PUBLIC.
         carma::carma
     PRIVATE
-        # These are implementation details
         m
         ${PTHREAD_LIB}
 )
 
 # Platform-specific linking
 if(DEFINED ENV{CIBW_LINUX})
-    # For manylinux, find and link system BLAS/LAPACK.
     message(STATUS "Finding and linking system BLAS and LAPACK for manylinux...")
     find_package(BLAS REQUIRED)
     find_package(LAPACK REQUIRED)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 else()
-    # On macOS, vcpkg's Armadillo automatically finds and links Accelerate.
     message(STATUS "Using vcpkg-provided Accelerate framework for macOS...")
 endif()
 
@@ -87,8 +90,6 @@ if(HDF5_FOUND AND NOT DEFINED ENV{CIBW_LINUX})
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE HDF5::HDF5)
     message(STATUS "Found and linked HDF5")
 endif()
-# --- END OF FIX ---
-
 
 # Minimal manylinux compatibility settings
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{CIBW_LINUX})
