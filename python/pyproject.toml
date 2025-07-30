@@ -34,7 +34,7 @@ if [ -f /opt/rh/devtoolset-10/enable ]; then
 fi
 echo "GCC version: $(gcc --version)"
 """
-environment = { CMAKE_TOOLCHAIN_FILE="/project/vcpkg/scripts/buildsystems/vcpkg.cmake", CMAKE_PREFIX_PATH="/project/vcpkg_installed/x64-linux", LDSCTRLEST_BUILD_PYTHON="ON", CIBW_LINUX="1", Python3_EXECUTABLE="{python}", Python3_INCLUDE_DIR="{python_include}", Python3_LIBRARY="{python_library}", VERBOSE="1", CC="gcc", CXX="g++"}
+environment = { CMAKE_PREFIX_PATH="/project/vcpkg_installed/x64-linux", LDSCTRLEST_BUILD_PYTHON="ON", CIBW_LINUX="1", Python3_EXECUTABLE="{python}", Python3_INCLUDE_DIR="{python_include}", Python3_LIBRARY="{python_library}", VERBOSE="1", CC="gcc", CXX="g++"}
 repair-wheel-command = """
 echo "=== Repairing wheel with auditwheel ==="
 auditwheel show {wheel}
